@@ -1,4 +1,4 @@
-# Helpers compartidos por los scripts de bootstrap.
+﻿# Helpers compartidos por los scripts de bootstrap.
 # Se carga con: . "$PSScriptRoot\lib.ps1"
 
 Set-StrictMode -Version Latest

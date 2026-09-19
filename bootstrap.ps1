@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Prepara todo lo que 'vagrant up' necesita: ISO, cidata, llaves y caja base.
 .EXAMPLE

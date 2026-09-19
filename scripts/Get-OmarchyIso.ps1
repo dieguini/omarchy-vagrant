@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Descarga la ISO oficial de Omarchy a .build\ y verifica su SHA-256.
 .DESCRIPTION
@@ -21,8 +21,11 @@ $url = $cfg['iso_url']
 $expected = $cfg['iso_sha256']
 if (-not $expected) {
     Write-Host "Obteniendo SHA-256 publicado de $url.sha256"
-    $line = (Invoke-WebRequest -Uri "$url.sha256" -UseBasicParsing).Content
-    $expected = ($line -split '\s+')[0]
+    $body = (Invoke-WebRequest -Uri "$url.sha256" -UseBasicParsing).Content
+    # El bucket sirve el .sha256 como binario, y Windows PowerShell entrega
+    # .Content como byte[] cuando el Content-Type no es texto.
+    if ($body -is [byte[]]) { $body = [Text.Encoding]::UTF8.GetString($body) }
+    $expected = ([string] $body).Trim() -split '\s+' | Select-Object -First 1
 }
 $expected = $expected.Trim().ToLowerInvariant()
 if ($expected -notmatch '^[0-9a-f]{64}$') {

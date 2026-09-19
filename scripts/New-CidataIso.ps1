@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Genera .build\cidata.iso: el disco de autoinstalación de Omarchy.
 .DESCRIPTION

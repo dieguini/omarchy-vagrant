@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Desmonta la ISO de Omarchy y el disco cidata de la VM.
 .DESCRIPTION

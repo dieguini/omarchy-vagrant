@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Construye y registra la caja Vagrant vacía sobre la que se instala Omarchy.
 .DESCRIPTION
