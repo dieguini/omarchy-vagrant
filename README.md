@@ -5,6 +5,10 @@
 [Omarchy](https://omarchy.org/) — el Arch + Hyprland de DHH — levantado en una VM
 de VirtualBox con un `vagrant up`, sin tocar el asistente de instalación.
 
+El porqué de cada decisión, y los tres fallos que hay entre una instalación
+terminada y un escritorio usable, están contados en
+[Running Omarchy in a Vagrant VM — and the Three Failures Nobody Documented](https://medium.com/@diegojaureguisalvatierra/running-omarchy-in-a-vagrant-vm-and-the-three-failures-nobody-documented-8a83d4111abc).
+
 ## Cómo funciona
 
 Omarchy 4 ya **no** se instala con un script sobre un Arch existente: se instala
