@@ -147,6 +147,52 @@ Vagrant.configure('2') do |config|
     SHELL
   end
 
+  # Herramientas extra, declaradas en config.json. Los helpers de Omarchy
+  # (omarchy-pkg-install, omarchy-pkg-aur-install) son TUIs de fzf y no sirven
+  # aquí, así que se usan los mismos comandos que ellos ejecutan por debajo.
+  #
+  # Va sin privilegios a propósito: yay se niega a correr como root, y escala
+  # solo gracias al provisioner de sudo de más arriba.
+  pkgs    = config_data['packages']      || []
+  aur     = config_data['aur_packages']  || []
+  webapps = config_data['webapps']       || []
+
+  if pkgs.any? || aur.any? || webapps.any?
+    webapp_cmds = webapps.map do |w|
+      'omarchy-webapp-install ' + [w['name'], w['url'], w['icon']].map { |a|
+        Shellwords.escape(a.to_s)
+      }.join(' ')
+    end.join("\n")
+
+    config.vm.provision 'tools', type: 'shell', privileged: false,
+                                 inline: <<~SHELL
+      set -eu
+      PKGS=#{Shellwords.escape(pkgs.join(' '))}
+      AUR=#{Shellwords.escape(aur.join(' '))}
+
+      if [ -n "$PKGS" ] || [ -n "$AUR" ]; then
+        echo "Refrescando las bases de datos de pacman..."
+        sudo pacman -Sy --noconfirm >/dev/null
+      fi
+
+      if [ -n "$PKGS" ]; then
+        echo "Paquetes oficiales: $PKGS"
+        sudo pacman -S --needed --noconfirm $PKGS
+      fi
+
+      if [ -n "$AUR" ]; then
+        echo "Paquetes del AUR: $AUR"
+        # --answerclean/--answerdiff son lo que evita que yay se plante en
+        # "Packages to cleanBuild?" esperando una respuesta que nunca llega.
+        yay -S --needed --noconfirm --removemake \\
+            --answerclean None --answerdiff None $AUR
+        sudo updatedb --prune-bind-mounts=no --add-prunepaths=/.snapshots || true
+      fi
+
+      #{webapp_cmds}
+    SHELL
+  end
+
   config.vm.provider 'virtualbox' do |vb|
     vb.name   = VM_NAME
     vb.gui    = config_data['gui']

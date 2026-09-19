@@ -108,6 +108,40 @@ Claves disponibles, con sus defaults en `config.json`:
 | `boot_timeout_seconds` | 3600 | Cubre toda la instalación, no solo el arranque |
 | `forwarded_ports` | `[]` | Lista de `{guest, host}` |
 
+### Instalar herramientas
+
+Tres listas más en `config.local.json` declaran qué lleva la VM además de lo que
+trae Omarchy. Se aplican en cada `vagrant up`, y son idempotentes:
+
+```json
+{
+  "packages": ["tree", "httpie", "jq"],
+  "aur_packages": ["visual-studio-code-bin"],
+  "webapps": [
+    { "name": "Claude", "url": "https://claude.ai", "icon": "claude" }
+  ]
+}
+```
+
+- `packages` → `pacman`, repos oficiales (y los de Omarchy).
+- `aur_packages` → `yay`. El provisioner pasa `--answerclean None --answerdiff
+  None`, que es lo que evita que `yay` se plante en *"Packages to cleanBuild?"*
+  esperando una respuesta que en un provisioner no llega nunca.
+- `webapps` → `omarchy-webapp-install`, que crea el lanzador de una web como si
+  fuera una app. El `icon` puede ser un nombre de icono o la URL de uno.
+
+Para aplicarlas sin reiniciar la VM:
+
+```powershell
+vagrant provision --provision-with tools
+```
+
+Un apunte de Arch: el provisioner hace `pacman -Sy` para refrescar las bases de
+datos, no `-Syu`. Es a propósito — un `-Syu` dentro de un `vagrant up` puede
+convertirse en una actualización de media hora y hasta pedir reinicio. La
+contrapartida es el riesgo clásico de actualización parcial, así que si la VM
+lleva tiempo viva, actualízala antes con `vagrant ssh -c omarchy-update`.
+
 Después de tocar la configuración:
 
 ```powershell

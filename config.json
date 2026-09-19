@@ -18,6 +18,9 @@
   "email_address": "",
   "timezone": "UTC",
   "keyboard": "us",
+  "packages": [],
+  "aur_packages": [],
+  "webapps": [],
   "boot_timeout_seconds": 3600,
   "forwarded_ports": []
 }
