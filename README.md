@@ -302,7 +302,14 @@ recibe EOF, y el provisioner no corre — en silencio y devolviendo 0.
 - vive en `.build\`, que está en `.gitignore`;
 - el Vagrantfile lo desmonta de la VM en cuanto la instalación termina, y deja
   una marca en `.build\installed-<vm>` para no volver a montarlo. Si ese paso
-  falla, `scripts\Eject-InstallMedia.ps1` lo hace a mano.
+  falla, avisa y **no** pone la marca, para que el siguiente arranque lo
+  reintente; `scripts\Eject-InstallMedia.ps1` lo hace a mano.
+
+El desmontaje va con `--forceunmount`, y no es opcional: el escritorio de
+Omarchy automonta los dos medios con `udiskie`, y con el guest teniéndolos
+montados VirtualBox responde `VERR_PDM_MEDIA_LOCKED` y se niega a expulsarlos.
+Si alguna vez ves el `cidata` en `/run/media/<usuario>/cidata`, es que ese paso
+no se completó.
 
 La contraseña viaja también dentro del provisioner de sudo, en el script que
 Vagrant sube a `/tmp/vagrant-shell`. Otra razón para no reutilizar en esta VM

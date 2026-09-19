@@ -7,6 +7,21 @@ Como esto automatiza software de terceros, la versión habla del repo, no de
 Omarchy. La versión de Omarchy que se instala se elige en `config.json`
 (`omarchy_version`), y cada release dice contra cuál se verificó.
 
+## [1.0.1] - 2026-09-19
+
+### Corregido
+
+- **El desmontaje de los medios de instalación no funcionaba y además mentía.**
+  El escritorio automonta la ISO y el `cidata` con `udiskie`, y con el guest
+  teniéndolos montados VirtualBox responde `VERR_PDM_MEDIA_LOCKED`. El trigger
+  ignoraba ese error, imprimía que los había desmontado y ponía la marca de
+  hecho, así que el `cidata` — que lleva el hash de la contraseña — se quedaba
+  adjunto y montado en `/run/media/<usuario>/cidata`.
+
+  Ahora se usa `--forceunmount`, y la marca solo se pone si de verdad se
+  desmontaron; si no, avisa y el siguiente arranque lo reintenta. Lo mismo en
+  `scripts\Eject-InstallMedia.ps1`, que ya falla en vez de callarse.
+
 ## [1.0.0] - 2026-09-19
 
 Primera versión. Verificada de punta a punta contra **Omarchy 4.0.4** en
@@ -41,4 +56,5 @@ escritorio Hyprland funcionando y herramientas instaladas.
   [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) usa QEMU
   con virgl y rinde mejor.
 
+[1.0.1]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.1
 [1.0.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.0

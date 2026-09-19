@@ -18,13 +18,21 @@ $cfg  = Get-OmarchyConfig
 $vbox = Get-VBoxManage
 $vm   = [string] $cfg['vm_name']
 
+# --forceunmount no es opcional: el escritorio de Omarchy automonta los dos
+# medios con udiskie, y con el guest teniéndolos montados VirtualBox responde
+# VERR_PDM_MEDIA_LOCKED.
+$failed = @()
 foreach ($port in 1, 2) {
     Write-Host "Vaciando SATA puerto $port de '$vm'..."
-    Invoke-Native $vbox @('storageattach', $vm, '--storagectl', 'SATA',
-                          '--port', "$port", '--device', '0',
-                          '--type', 'dvddrive', '--medium', 'emptydrive') -IgnoreExitCode
+    & $vbox storageattach $vm --storagectl SATA --port $port --device 0 `
+            --type dvddrive --medium emptydrive --forceunmount
+    if ($LASTEXITCODE -ne 0) { $failed += $port }
+}
+
+if ($failed.Count -gt 0) {
+    throw "No se pudieron desmontar los puertos $($failed -join ', '). Apaga la VM (vagrant halt) y vuelve a intentarlo."
 }
 
 $marker = Join-Path (Get-BuildDir) "installed-$vm"
 if (-not (Test-Path $marker)) { New-Item -ItemType File -Path $marker | Out-Null }
-Write-Host "Hecho."
+Write-Host "Hecho: los dos medios están fuera."

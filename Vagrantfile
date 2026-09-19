@@ -276,14 +276,26 @@ Vagrant.configure('2') do |config|
     trigger.ruby do |_env, _machine|
       next if File.exist?(INSTALLED)
 
-      [1, 2].each do |port|
+      # --forceunmount no es opcional: udiskie automonta los dos medios en el
+      # escritorio, y con el guest teniéndolos montados VirtualBox se niega a
+      # expulsarlos con VERR_PDM_MEDIA_LOCKED.
+      failed = [1, 2].reject do |port|
         system(vboxmanage, 'storageattach', VM_NAME, '--storagectl', 'SATA',
                '--port', port.to_s, '--device', '0',
-               '--type', 'dvddrive', '--medium', 'emptydrive',
+               '--type', 'dvddrive', '--medium', 'emptydrive', '--forceunmount',
                out: File::NULL, err: File::NULL)
       end
-      FileUtils.touch(INSTALLED)
-      puts 'Medios de instalación desmontados. La VM ya arranca sola desde disco.'
+
+      # La marca solo se pone si de verdad se desmontaron: si no, el siguiente
+      # arranque debe volver a intentarlo en vez de dar el trabajo por hecho.
+      if failed.empty?
+        FileUtils.touch(INSTALLED)
+        puts 'Medios de instalación desmontados. La VM ya arranca sola desde disco.'
+      else
+        puts "AVISO: no se pudieron desmontar los medios de los puertos #{failed.join(', ')}."
+        puts 'El cidata lleva el hash de tu contraseña y el escritorio lo automonta.'
+        puts 'Ejecuta scripts\\Eject-InstallMedia.ps1 para quitarlos.'
+      end
     end
   end
 
