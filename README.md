@@ -247,6 +247,11 @@ La plantilla de `user_configuration.json` sale del configurador de la ISO
 `configs/airootfs/root/configurator`). Si Omarchy cambia ese formato en una
 versión futura, ahí es donde hay que mirar.
 
+## Invítame un café
+
+Si esto te ahorró la tarde de pelearte con el instalador:
+[buymeacoffee.com/g0l14t](https://buymeacoffee.com/g0l14t)
+
 ## Licencia
 
 MIT. Omarchy es de Basecamp/omacom y tiene su propia licencia.
