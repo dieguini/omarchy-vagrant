@@ -98,6 +98,8 @@ Claves disponibles, con sus defaults en `config.json`:
 | `cpus`, `memory_mb`, `disk_gb` | 4 / 8192 / 64 | `disk_gb` queda grabado en la caja base |
 | `gui` | `true` | Ponlo en `false` y te quedas solo con SSH |
 | `accelerate_3d`, `vram_mb` | `true` / 128 | Ver "Gráficos" |
+| `software_rendering` | `true` | Pone QtQuick en software, sin lo cual no hay escritorio. Ver "Gráficos" |
+| `passwordless_sudo` | `true` | Instala la regla de sudoers que Vagrant da por hecha. Ver "Seguridad" |
 | `username`, `password` | `omarchy` | El usuario debe cumplir las reglas de Omarchy: minúsculas, empieza por letra o `_` |
 | `full_name`, `email_address` | vacío | Se usan para la identidad de git dentro de la VM |
 | `timezone`, `keyboard` | `UTC` / `us` | |
@@ -114,21 +116,29 @@ vagrant up
 
 ## Gráficos
 
-Hyprland necesita un dispositivo DRM. En VirtualBox eso significa VMSVGA con el
-driver `vmwgfx` del kernel, que es lo que este Vagrantfile configura (VMSVGA,
-128 MB de VRAM, aceleración 3D). Aun así es el punto más frágil de todo el
-montaje: es hardware emulado y Hyprland no lo tiene entre sus plataformas de
-primera.
+Hyprland corre bien sobre la GPU emulada: VirtualBox da VMSVGA, el kernel carga
+`vmwgfx`, aparece `/dev/dri/card0` y el compositor modesetea sin problema.
 
-Si la sesión gráfica arranca en negro:
+Lo que **no** aguanta ese camino es QtQuick. Omarchy 4 arranca con SDDM, y tanto
+su greeter como la barra (`omarchy-shell`, que es quickshell) son QtQuick sobre
+EGL/dmabuf. Sin arreglar, el resultado es una pantalla negra en dos actos: el
+greeter arranca y se cierra al segundo (`Greeter stopped` en el journal de
+`sddm`), y si entras igualmente, la barra queda en bucle de caída con
+`The Wayland connection experienced a fatal error: Invalid argument`.
 
-1. Entra por `vagrant ssh` (eso sigue funcionando aunque el escritorio no).
-2. Prueba a forzar el renderizado por software:
-   ```bash
-   echo 'export WLR_RENDERER_ALLOW_SOFTWARE=1' >> ~/.bashrc
-   ```
-3. Si el 3D emulado es el problema, apágalo: `"accelerate_3d": false` en
-   `config.local.json`, luego `vagrant reload`.
+El Vagrantfile lo resuelve con un provisioner que pone QtQuick en software, en
+los dos sitios que hacen falta:
+
+- `/etc/sddm.conf.d/99-vagrant-vm-rendering.conf` → `GreeterEnvironment=QT_QUICK_BACKEND=software`, para el greeter;
+- `QT_QUICK_BACKEND=software` en `/etc/environment`, para la sesión del usuario.
+
+Hyprland en sí no necesita nada de esto. Si prefieres desactivarlo — por ejemplo
+para probar sobre otro hipervisor — pon `"software_rendering": false`.
+
+Si aun así la pantalla se queda en negro, `vagrant ssh` sigue funcionando; mira
+`journalctl -b -u sddm` y el log del compositor en `/run/user/<uid>/hypr/*/hyprland.log`.
+Apagar el 3D emulado (`"accelerate_3d": false` y `vagrant reload`) es lo
+siguiente que probaría.
 
 Si lo que quieres es *probar* Omarchy en Windows y no automatizarlo, el propio
 proyecto publica [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows),
@@ -142,10 +152,28 @@ repo es para cuando quieres la VM **reproducible y descriptible en código**.
   `forwarded_port`.
 - **Cifrado de disco.** Una instalación cifrada pide la frase LUKS en cada
   arranque, lo que rompe lo desatendido. El manual dice lo mismo.
-- **Provisioners.** La instalación de Omarchy ya es el provisioning; si quieres
-  añadir tuyos, un bloque `config.vm.provision "shell"` normal funciona.
+- **Bloque de Vagrant en `/etc/fstab`.** Sin carpetas compartidas no hay nada que
+  persistir, y ese paso es justo el que hacía fallar el primer `vagrant up`, así
+  que está desactivado con `allow_fstab_modification = false`.
+
+Sí puedes añadir tus propios `config.vm.provision "shell"`, con o sin
+`privileged: true`: los dos provisioners que trae el repo dejan la VM en un
+estado donde eso funciona como en cualquier caja Vagrant.
 
 ## Seguridad
+
+Omarchy deja al usuario en `wheel` pidiendo contraseña, como cualquier
+instalación normal. Vagrant da por hecho el sudo sin contraseña de sus cajas: sin
+él fallan sus propios pasos y cualquier provisioner con `privileged: true`. Por
+eso un provisioner instala `/etc/sudoers.d/99-vagrant` con `NOPASSWD`, que es la
+convención de todas las cajas Vagrant. Es una VM de desarrollo desechable; si no
+te vale, `"passwordless_sudo": false` y lo dejas como lo instaló Omarchy.
+
+Ojo con un detalle contraintuitivo: esto **no** se arregla con
+`config.ssh.sudo_command`. Ahí Vagrant sustituye `%c` por el *shell*, y le pasa
+el comando por stdin. Anteponer `echo contraseña |` pisa ese stdin, el shell
+recibe EOF, y el provisioner no corre — en silencio y devolviendo 0.
+
 
 `cidata.iso` lleva el hash SHA-512 de la contraseña del usuario. Por eso:
 
@@ -153,6 +181,10 @@ repo es para cuando quieres la VM **reproducible y descriptible en código**.
 - el Vagrantfile lo desmonta de la VM en cuanto la instalación termina, y deja
   una marca en `.build\installed-<vm>` para no volver a montarlo. Si ese paso
   falla, `scripts\Eject-InstallMedia.ps1` lo hace a mano.
+
+La contraseña viaja también dentro del provisioner de sudo, en el script que
+Vagrant sube a `/tmp/vagrant-shell`. Otra razón para no reutilizar en esta VM
+una contraseña que uses en otro sitio.
 
 La llave SSH de `.build\ssh\` es exclusiva de esta VM: no se usa la llave
 insegura de Vagrant.

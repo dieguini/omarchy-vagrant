@@ -14,6 +14,7 @@
 
 require 'json'
 require 'fileutils'
+require 'shellwords'
 
 ROOT  = File.expand_path(File.dirname(__FILE__))
 BUILD = File.join(ROOT, '.build')
@@ -68,12 +69,82 @@ Vagrant.configure('2') do |config|
   # timeout de arranque de arriba es el que cuenta, y es generoso a propósito.
   config.vm.synced_folder '.', '/vagrant', disabled: true
 
+  # Sin carpetas compartidas no hay nada que persistir, y el bloque que Vagrant
+  # escribe en /etc/fstab es justo lo que hacía fallar el primer 'up'.
+  config.vm.allow_fstab_modification = false
+
+  # Omarchy deja al usuario en 'wheel' pidiendo contraseña, como cualquier
+  # instalación normal. Vagrant, en cambio, da por hecho el sudo sin contraseña
+  # de sus cajas: sin él fallan tanto sus pasos internos como cualquier
+  # provisioner con privileged: true.
+  #
+  # Y no se arregla con config.ssh.sudo_command: ahí Vagrant sustituye %c por el
+  # *shell*, y le pasa el comando por stdin. Meter un 'echo contraseña |' delante
+  # le pisa ese stdin, así que el shell recibe EOF y el comando nunca corre --
+  # en silencio y con código de salida 0.
+  #
+  # Así que se instala la regla de sudoers, desde un provisioner sin privilegios
+  # que escala él mismo. A partir de ahí la VM se comporta como una caja Vagrant
+  # normal. Ponlo en false si prefieres conservar el sudo con contraseña.
+  if config_data['passwordless_sudo']
+    config.vm.provision 'passwordless-sudo', type: 'shell', privileged: false,
+                                             inline: <<~SHELL
+      set -eu
+      if sudo -n true 2>/dev/null; then
+        echo "sudo sin contraseña ya configurado."
+        exit 0
+      fi
+      echo "Instalando /etc/sudoers.d/99-vagrant..."
+      echo #{Shellwords.escape(config_data['password'])} | sudo -S -p '' bash -c \\
+        "echo '#{config_data['username']} ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/99-vagrant &&
+         chmod 440 /etc/sudoers.d/99-vagrant &&
+         visudo -c -q"
+    SHELL
+  end
+
   config.ssh.username         = config_data['username']
   config.ssh.private_key_path = SSH_KEY
   config.ssh.insert_key       = false
 
   (config_data['forwarded_ports'] || []).each do |fp|
     config.vm.network 'forwarded_port', guest: fp['guest'], host: fp['host']
+  end
+
+  # Omarchy 4 arranca con SDDM, y tanto su greeter como la barra (omarchy-shell,
+  # que es quickshell) son QtQuick. Sobre la GPU emulada de VirtualBox el
+  # camino EGL/dmabuf no aguanta: el greeter salía y se cerraba en un segundo, y
+  # la barra entraba en bucle de caída con "The Wayland connection experienced a
+  # fatal error". Con QtQuick en software ambos funcionan. Hyprland en sí no
+  # necesita esto: el compositor sobre vmwgfx va bien.
+  if config_data['software_rendering']
+    config.vm.provision 'qt-software-rendering', type: 'shell', privileged: true,
+                                                 inline: <<~SHELL
+      set -eu
+      changed=0
+
+      conf=/etc/sddm.conf.d/99-vagrant-vm-rendering.conf
+      want='[General]
+      GreeterEnvironment=QT_QUICK_BACKEND=software'
+      if [ ! -f "$conf" ] || [ "$(cat "$conf")" != "$want" ]; then
+        mkdir -p /etc/sddm.conf.d
+        printf '%s\\n' "$want" > "$conf"
+        changed=1
+      fi
+
+      # Para la sesión del usuario, no solo para el greeter.
+      if ! grep -q '^QT_QUICK_BACKEND=' /etc/environment 2>/dev/null; then
+        echo 'QT_QUICK_BACKEND=software' >> /etc/environment
+        changed=1
+      fi
+
+      # Sólo reiniciar si algo cambió: un restart tumba la sesión gráfica abierta.
+      if [ "$changed" = 1 ]; then
+        echo "Aplicando renderizado por software de Qt y reiniciando SDDM..."
+        systemctl restart sddm
+      else
+        echo "Renderizado por software de Qt ya configurado."
+      fi
+    SHELL
   end
 
   config.vm.provider 'virtualbox' do |vb|

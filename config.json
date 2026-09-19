@@ -2,7 +2,6 @@
   "omarchy_version": "4.0.4",
   "iso_url": "",
   "iso_sha256": "",
-
   "vm_name": "omarchy",
   "hostname": "omarchy",
   "cpus": 4,
@@ -11,14 +10,14 @@
   "gui": true,
   "accelerate_3d": true,
   "vram_mb": 128,
-
+  "software_rendering": true,
+  "passwordless_sudo": true,
   "username": "omarchy",
   "password": "omarchy",
   "full_name": "",
   "email_address": "",
   "timezone": "UTC",
   "keyboard": "us",
-
   "boot_timeout_seconds": 3600,
   "forwarded_ports": []
 }
