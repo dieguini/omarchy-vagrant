@@ -145,6 +145,44 @@ proyecto publica [try-omarchy-windows](https://github.com/omacom/try-omarchy-win
 que usa QEMU con virgl/Venus y da mejor aceleración gráfica que VirtualBox. Este
 repo es para cuando quieres la VM **reproducible y descriptible en código**.
 
+## Cuando algo se queda a medias
+
+Un `vagrant up` interrumpido — un Ctrl+C, o un error de VirtualBox a mitad —
+deja rastro en dos sitios, y el siguiente intento falla con un mensaje que no
+apunta a la causa.
+
+**"another process is already executing an action on the machine"**, sin ningún
+proceso de Vagrant vivo. Es un candado huérfano: Vagrant escribe un archivo
+`action_<nombre>` en `.vagrant\machines\default\virtualbox\` mientras ejecuta
+cada acción, y si el proceso muere no lo borra. Comprueba primero que de verdad
+no hay nada corriendo, y luego bórralo:
+
+```powershell
+Get-Process ruby,vagrant -ErrorAction SilentlyContinue
+Remove-Item .\.vagrant\machines\default\virtualbox\action_*
+```
+
+**"Could not rename the directory ... (VERR_ALREADY_EXISTS)"** al crear la VM.
+VirtualBox dejó atrás la carpeta de una VM anterior. El trigger de `destroy` se
+encarga de esto, pero si llegas a verlo, mira qué hay dentro y quítala:
+
+```powershell
+Get-ChildItem "$env:USERPROFILE\VirtualBox VMs\omarchy" -Recurse
+Remove-Item "$env:USERPROFILE\VirtualBox VMs\omarchy" -Recurse
+```
+
+Ese error además deja una VM a medio importar y registrada, con un nombre tipo
+`omarchy-empty-64g-builder_<números>`. Quítala también:
+
+```powershell
+VBoxManage list vms
+VBoxManage unregistervm "<ese-nombre>" --delete
+```
+
+Después de limpiar, `vagrant status` te dice desde dónde sigues: `not created`
+significa empezar de nuevo con `vagrant up`, y `poweroff` que la VM sobrevivió y
+`vagrant up` la retoma donde estaba.
+
 ## Qué no hay
 
 - **Carpetas compartidas.** Omarchy no trae las Guest Additions, así que
