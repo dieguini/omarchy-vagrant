@@ -331,6 +331,11 @@ La plantilla de `user_configuration.json` sale del configurador de la ISO
 `configs/airootfs/root/configurator`). Si Omarchy cambia ese formato en una
 versión futura, ahí es donde hay que mirar.
 
+## Versiones
+
+El historial de cambios está en [CHANGELOG.md](CHANGELOG.md). Cada release
+indica contra qué versión de Omarchy se verificó.
+
 ## Licencia
 
 MIT. Omarchy es de Basecamp/omacom y tiene su propia licencia.
