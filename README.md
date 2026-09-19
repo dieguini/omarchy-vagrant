@@ -1,5 +1,7 @@
 # omarchy-vagrant
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=flat&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/g0l14t)
+
 [Omarchy](https://omarchy.org/) — el Arch + Hyprland de DHH — levantado en una VM
 de VirtualBox con un `vagrant up`, sin tocar el asistente de instalación.
 
@@ -246,11 +248,6 @@ La plantilla de `user_configuration.json` sale del configurador de la ISO
 ([omacom/omarchy-iso](https://github.com/omacom/omarchy-iso), en
 `configs/airootfs/root/configurator`). Si Omarchy cambia ese formato en una
 versión futura, ahí es donde hay que mirar.
-
-## Invítame un café
-
-Si esto te ahorró la tarde de pelearte con el instalador:
-[buymeacoffee.com/g0l14t](https://buymeacoffee.com/g0l14t)
 
 ## Licencia
 
