@@ -147,6 +147,45 @@ Vagrant.configure('2') do |config|
     SHELL
   end
 
+  # Resolución del escritorio. Sin Guest Additions no hay auto-resize, y los
+  # valores que Omarchy elige solo en una VM son estrechos: modo 'preferred' da
+  # 1280x800 y la escala automática se va a 2, o sea un escritorio efectivo de
+  # 640x400 donde sus propios diálogos no caben.
+  #
+  # Omarchy 4 configura Hyprland en Lua, así que esto se escribe en
+  # monitors.lua; 'hyprctl keyword' no vale ("can't work with non-legacy
+  # parsers"). Los modos que acepta la GPU emulada llegan hasta 4096x2160:
+  # míralos con 'hyprctl monitors all'.
+  if config_data['resolution'].to_s != ''
+    config.vm.provision 'display', type: 'shell', privileged: false,
+                                   inline: <<~SHELL
+      set -eu
+      conf="$HOME/.config/hypr/monitors.lua"
+      mkdir -p "$(dirname "$conf")"
+
+      want='-- Generado por omarchy-vagrant: cambia resolution/scale/gdk_scale en
+      -- config.json o config.local.json, no este archivo, que se reescribe.
+      local omarchy_gdk_scale = #{config_data['gdk_scale'] || 1}
+      hl.env("GDK_SCALE", tostring(omarchy_gdk_scale))
+      hl.monitor({ output = "", mode = "#{config_data['resolution']}", position = "auto", scale = #{config_data['scale'] || 1} })'
+
+      if [ "$(cat "$conf" 2>/dev/null)" = "$want" ]; then
+        echo "Resolución ya configurada (#{config_data['resolution']})."
+      else
+        printf '%s\\n' "$want" > "$conf"
+        echo "Escrito monitors.lua: #{config_data['resolution']}, escala #{config_data['scale'] || 1}."
+
+        # Recargar solo si hay una sesión viva; en el primer up todavía no la hay.
+        export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+        sig=$(ls -t "$XDG_RUNTIME_DIR/hypr" 2>/dev/null | head -1 || true)
+        if [ -n "$sig" ]; then
+          HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl reload >/dev/null 2>&1 || true
+          echo "Hyprland recargado."
+        fi
+      fi
+    SHELL
+  end
+
   # Herramientas extra, declaradas en config.json. Los helpers de Omarchy
   # (omarchy-pkg-install, omarchy-pkg-aur-install) son TUIs de fzf y no sirven
   # aquí, así que se usan los mismos comandos que ellos ejecutan por debajo.

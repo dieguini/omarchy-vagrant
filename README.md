@@ -100,6 +100,7 @@ Claves disponibles, con sus defaults en `config.json`:
 | `cpus`, `memory_mb`, `disk_gb` | 4 / 8192 / 64 | `disk_gb` queda grabado en la caja base |
 | `gui` | `true` | Ponlo en `false` y te quedas solo con SSH |
 | `accelerate_3d`, `vram_mb` | `true` / 128 | Ver "Gráficos" |
+| `resolution`, `scale`, `gdk_scale` | `1920x1080@60` / 1 / 1 | Ver "Resolución". Deja `resolution` vacío para no tocar nada |
 | `software_rendering` | `true` | Pone QtQuick en software, sin lo cual no hay escritorio. Ver "Gráficos" |
 | `passwordless_sudo` | `true` | Instala la regla de sudoers que Vagrant da por hecha. Ver "Seguridad" |
 | `username`, `password` | `omarchy` | El usuario debe cumplir las reglas de Omarchy: minúsculas, empieza por letra o `_` |
@@ -191,6 +192,37 @@ Si lo que quieres es *probar* Omarchy en Windows y no automatizarlo, el propio
 proyecto publica [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows),
 que usa QEMU con virgl/Venus y da mejor aceleración gráfica que VirtualBox. Este
 repo es para cuando quieres la VM **reproducible y descriptible en código**.
+
+## Resolución
+
+Sin Guest Additions no hay auto-resize de la ventana, y lo que Omarchy elige
+solo dentro de una VM se queda corto: modo `preferred` da **1280x800** y la
+escala automática se va a **2**, o sea un escritorio efectivo de 640x400 donde
+ni sus propios diálogos caben. El síntoma es texto enorme y ventanas cortadas.
+
+El provisioner `display` lo arregla escribiendo `~/.config/hypr/monitors.lua`
+con lo que digan `resolution`, `scale` y `gdk_scale`. Omarchy 4 configura
+Hyprland en Lua, así que ese es el sitio; `hyprctl keyword` no sirve y responde
+*"can't work with non-legacy parsers"*.
+
+La GPU emulada acepta modos hasta 4096x2160. Para ver la lista:
+
+```powershell
+vagrant ssh -c 'hyprctl monitors all'
+```
+
+Cambia `resolution` y aplícalo sin reiniciar la VM:
+
+```powershell
+vagrant provision --provision-with display
+```
+
+Ese archivo se reescribe en cada `vagrant up`, así que configura la resolución
+desde `config.local.json`, no editándolo a mano. Si prefieres gestionarlo tú,
+pon `"resolution": ""` y el provisioner no se ejecuta.
+
+Si el escritorio se queda más grande que la ventana de VirtualBox, en el menú
+**View** tienes *Scaled Mode* y los ajustes de escala de la ventana.
 
 ## Cuando algo se queda a medias
 
