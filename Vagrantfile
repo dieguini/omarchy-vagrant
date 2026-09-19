@@ -194,6 +194,30 @@ Vagrant.configure('2') do |config|
     trigger.name = 'Limpiar marca de instalación'
     trigger.ruby do |_env, _machine|
       File.delete(INSTALLED) if File.exist?(INSTALLED)
+
+      # VirtualBox en Windows reescribe Logs\VBoxHardening.log justo después de
+      # borrar la VM, así que la carpeta sobrevive vacía al destroy. El
+      # siguiente 'up' falla al renombrar la VM importada: "Could not rename
+      # the directory ... (VERR_ALREADY_EXISTS)". La quitamos, pero solo si no
+      # hay nada dentro salvo los logs.
+      begin
+        props = IO.popen([vboxmanage, 'list', 'systemproperties'], &:read)
+        base  = props[/^Default machine folder:\s+(.+)$/, 1]&.strip
+        next if base.nil? || base.empty?
+
+        dir = File.join(base, VM_NAME)
+        next unless Dir.exist?(dir)
+
+        if (Dir.children(dir) - ['Logs']).empty?
+          FileUtils.rm_rf(dir)
+          puts "Quitada la carpeta que VirtualBox dejó atrás: #{dir}"
+        else
+          puts "Ojo: #{dir} sigue ahí y no está vacía. El próximo 'vagrant up' " \
+               'fallará al crear la VM hasta que la revises.'
+        end
+      rescue StandardError => e
+        puts "No se pudo limpiar la carpeta de la VM: #{e.message}"
+      end
     end
   end
 
