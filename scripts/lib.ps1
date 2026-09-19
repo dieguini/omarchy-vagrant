@@ -1,5 +1,5 @@
-﻿# Helpers compartidos por los scripts de bootstrap.
-# Se carga con: . "$PSScriptRoot\lib.ps1"
+﻿# Helpers shared by the bootstrap scripts.
+# Load with: . "$PSScriptRoot\lib.ps1"
 
 Set-StrictMode -Version Latest
 
@@ -13,8 +13,8 @@ function Get-BuildDir {
     $dir
 }
 
-# config.json trae los valores por defecto; config.local.json (ignorado por git)
-# sobrescribe las claves que declare. Así la contraseña real nunca se versiona.
+# config.json holds the defaults; config.local.json (gitignored) overrides the
+# keys it declares, so the real password never ends up in git.
 function Get-OmarchyConfig {
     $root = Get-RepoRoot
     $cfg = @{}
@@ -60,10 +60,10 @@ function Get-VBoxManage {
     if ($cmd) { $candidates = @($cmd.Source) + $candidates }
 
     foreach ($c in $candidates) { if (Test-Path $c) { return $c } }
-    throw "No encuentro VBoxManage.exe. Instala VirtualBox desde https://www.virtualbox.org/"
+    throw "Cannot find VBoxManage.exe. Install VirtualBox from https://www.virtualbox.org/"
 }
 
-# openssl viene con Git para Windows aunque no esté en el PATH.
+# openssl ships with Git for Windows even when it isn't on PATH.
 function Get-OpenSsl {
     $cmd = Get-Command openssl.exe -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
@@ -71,7 +71,7 @@ function Get-OpenSsl {
         'C:\Program Files\Git\mingw64\bin\openssl.exe',
         'C:\Program Files\Git\usr\bin\openssl.exe'
     )) { if (Test-Path $c) { return $c } }
-    throw "No encuentro openssl.exe (hace falta para el hash SHA-512 de la contraseña). Instala Git para Windows."
+    throw "Cannot find openssl.exe (needed for the password's SHA-512 hash). Install Git for Windows."
 }
 
 function Invoke-Native {
@@ -82,13 +82,13 @@ function Invoke-Native {
     )
     & $FilePath @Arguments
     if (-not $IgnoreExitCode -and $LASTEXITCODE -ne 0) {
-        throw "Falló: $FilePath $($Arguments -join ' ') (exit $LASTEXITCODE)"
+        throw "Failed: $FilePath $($Arguments -join ' ') (exit $LASTEXITCODE)"
     }
 }
 
-# Crea una ISO ISO9660+Joliet con IMAPI2, la API de grabado que trae Windows.
-# El kernel de Linux lee los nombres largos desde Joliet, que es lo que el
-# instalador de Omarchy necesita para encontrar user_configuration.json.
+# Builds an ISO9660+Joliet image with IMAPI2, the burning API Windows ships.
+# The Linux kernel reads long filenames from Joliet, which is what Omarchy's
+# installer needs in order to find user_configuration.json.
 function New-IsoImage {
     param(
         [Parameter(Mandatory)] [string] $SourceDir,

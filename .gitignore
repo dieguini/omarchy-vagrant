@@ -1,8 +1,8 @@
-# Artefactos de bootstrap: ISO de Omarchy, cidata, llaves SSH, caja base
+# Bootstrap artifacts: Omarchy ISO, cidata, SSH keys, base box
 .build/
 
-# Sobrescrituras locales de configuración (contraseñas, nombre, email)
+# Local config overrides (passwords, name, email)
 config.local.json
 
-# Estado de Vagrant
+# Vagrant state
 .vagrant/

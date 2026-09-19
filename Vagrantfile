@@ -1,16 +1,17 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
-# Omarchy en VirtualBox, vía Vagrant.
+# Omarchy in VirtualBox, via Vagrant.
 #
-# Omarchy 4 no se instala con un script sobre un Arch existente: se instala
-# desde su ISO. El camino soportado para hacerlo sin nadie al teclado es el
-# "unattended install" del manual: un segundo disco etiquetado `cidata` con la
-# configuración, que el instalador detecta y usa en lugar del asistente.
+# Omarchy 4 can't be installed with a script on top of an existing Arch system:
+# it installs from its own ISO. The supported way to do that with nobody at the
+# keyboard is the manual's "unattended install": a second drive labeled `cidata`
+# carrying the configuration, which the installer finds and uses instead of the
+# setup wizard.
 #
-# Por eso aquí la caja base está vacía. `bootstrap.ps1` la fabrica, baja la ISO
-# y arma el cidata; este Vagrantfile monta las dos ISOs, arranca, y espera a que
-# la instalación termine y el sistema reinicie con sshd abierto.
+# That's why the base box here is empty. `bootstrap.ps1` builds it, downloads
+# the ISO and assembles the cidata; this Vagrantfile attaches both ISOs, boots,
+# and waits for the install to finish and the system to come back with sshd open.
 
 require 'json'
 require 'fileutils'
@@ -28,8 +29,8 @@ BOX_NAME  = "omarchy-empty-#{config_data['disk_gb']}g"
 ISO_PATH  = File.join(BUILD, "omarchy-#{config_data['omarchy_version']}.iso")
 CIDATA    = File.join(BUILD, 'cidata.iso')
 SSH_KEY   = File.join(BUILD, 'ssh', 'id_ed25519')
-# Marca de que la instalación ya terminó: a partir de ahí no volvemos a montar
-# la ISO ni el cidata, que lleva el hash de la contraseña.
+# Marks that the install finished: from then on we stop attaching the ISO and
+# the cidata, which carries the password hash.
 INSTALLED = File.join(BUILD, "installed-#{VM_NAME}")
 
 def vboxmanage
@@ -42,18 +43,18 @@ def vboxmanage
   candidates.find { |c| File.exist?(c) } || 'VBoxManage'
 end
 
-# Sólo los comandos que arrancan la VM necesitan los artefactos; `vagrant
-# destroy` o `vagrant status` deben seguir funcionando aunque falten.
+# Only the commands that boot the VM need the artifacts; `vagrant destroy` and
+# `vagrant status` must keep working even when they're missing.
 if %w[up reload resume provision].include?(ARGV[0])
-  missing = { ISO_PATH => 'la ISO de Omarchy',
-              CIDATA   => 'el disco cidata',
-              SSH_KEY  => 'la llave SSH' }.reject { |path, _| File.exist?(path) }
+  missing = { ISO_PATH => 'the Omarchy ISO',
+              CIDATA   => 'the cidata drive',
+              SSH_KEY  => 'the SSH key' }.reject { |path, _| File.exist?(path) }
   unless missing.empty?
     warn ''
-    warn 'Falta preparar el entorno. No encuentro:'
+    warn "The environment isn't prepared yet. Missing:"
     missing.each { |path, what| warn "  - #{what}: #{path}" }
     warn ''
-    warn 'Corre primero:  .\bootstrap.ps1'
+    warn 'Run this first:  .\bootstrap.ps1'
     warn ''
     exit 1
   end
@@ -65,36 +66,36 @@ Vagrant.configure('2') do |config|
   config.vm.guest            = :arch
   config.vm.boot_timeout     = config_data['boot_timeout_seconds']
 
-  # La instalación completa (particionar, bajar paquetes, reiniciar) tarda; el
-  # timeout de arranque de arriba es el que cuenta, y es generoso a propósito.
+  # The whole install (partitioning, downloading packages, rebooting) happens
+  # inside that boot window, which is why the timeout above is so generous.
   config.vm.synced_folder '.', '/vagrant', disabled: true
 
-  # Sin carpetas compartidas no hay nada que persistir, y el bloque que Vagrant
-  # escribe en /etc/fstab es justo lo que hacía fallar el primer 'up'.
+  # With no synced folders there is nothing to persist, and the block Vagrant
+  # writes into /etc/fstab is exactly what broke the first 'up'.
   config.vm.allow_fstab_modification = false
 
-  # Omarchy deja al usuario en 'wheel' pidiendo contraseña, como cualquier
-  # instalación normal. Vagrant, en cambio, da por hecho el sudo sin contraseña
-  # de sus cajas: sin él fallan tanto sus pasos internos como cualquier
-  # provisioner con privileged: true.
+  # Omarchy leaves the user in 'wheel' asking for a password, like any normal
+  # install. Vagrant, on the other hand, assumes the passwordless sudo its own
+  # boxes ship with: without it both its internal steps and every provisioner
+  # with privileged: true fail.
   #
-  # Y no se arregla con config.ssh.sudo_command: ahí Vagrant sustituye %c por el
-  # *shell*, y le pasa el comando por stdin. Meter un 'echo contraseña |' delante
-  # le pisa ese stdin, así que el shell recibe EOF y el comando nunca corre --
-  # en silencio y con código de salida 0.
+  # And config.ssh.sudo_command does NOT fix it: there Vagrant substitutes %c
+  # with the *shell*, and feeds the command over stdin. Prefixing an
+  # 'echo password |' overwrites that stdin, so the shell gets EOF and the
+  # command never runs -- silently, and with exit code 0.
   #
-  # Así que se instala la regla de sudoers, desde un provisioner sin privilegios
-  # que escala él mismo. A partir de ahí la VM se comporta como una caja Vagrant
-  # normal. Ponlo en false si prefieres conservar el sudo con contraseña.
+  # So the sudoers rule gets installed instead, from an unprivileged provisioner
+  # that escalates on its own. From then on the VM behaves like a normal Vagrant
+  # box. Set this to false to keep Omarchy's password-protected sudo.
   if config_data['passwordless_sudo']
     config.vm.provision 'passwordless-sudo', type: 'shell', privileged: false,
                                              inline: <<~SHELL
       set -eu
       if sudo -n true 2>/dev/null; then
-        echo "sudo sin contraseña ya configurado."
+        echo "Passwordless sudo already configured."
         exit 0
       fi
-      echo "Instalando /etc/sudoers.d/99-vagrant..."
+      echo "Installing /etc/sudoers.d/99-vagrant..."
       echo #{Shellwords.escape(config_data['password'])} | sudo -S -p '' bash -c \\
         "echo '#{config_data['username']} ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/99-vagrant &&
          chmod 440 /etc/sudoers.d/99-vagrant &&
@@ -110,12 +111,12 @@ Vagrant.configure('2') do |config|
     config.vm.network 'forwarded_port', guest: fp['guest'], host: fp['host']
   end
 
-  # Omarchy 4 arranca con SDDM, y tanto su greeter como la barra (omarchy-shell,
-  # que es quickshell) son QtQuick. Sobre la GPU emulada de VirtualBox el
-  # camino EGL/dmabuf no aguanta: el greeter salía y se cerraba en un segundo, y
-  # la barra entraba en bucle de caída con "The Wayland connection experienced a
-  # fatal error". Con QtQuick en software ambos funcionan. Hyprland en sí no
-  # necesita esto: el compositor sobre vmwgfx va bien.
+  # Omarchy 4 boots into SDDM, and both its greeter and the bar (omarchy-shell,
+  # which is quickshell) are QtQuick. On VirtualBox's emulated GPU the
+  # EGL/dmabuf path doesn't survive: the greeter started and closed a second
+  # later, and the bar entered a crash loop with "The Wayland connection
+  # experienced a fatal error". With QtQuick in software both work. Hyprland
+  # itself needs none of this: the compositor runs fine on vmwgfx.
   if config_data['software_rendering']
     config.vm.provision 'qt-software-rendering', type: 'shell', privileged: true,
                                                  inline: <<~SHELL
@@ -131,31 +132,31 @@ Vagrant.configure('2') do |config|
         changed=1
       fi
 
-      # Para la sesión del usuario, no solo para el greeter.
+      # For the user's session too, not just the greeter.
       if ! grep -q '^QT_QUICK_BACKEND=' /etc/environment 2>/dev/null; then
         echo 'QT_QUICK_BACKEND=software' >> /etc/environment
         changed=1
       fi
 
-      # Sólo reiniciar si algo cambió: un restart tumba la sesión gráfica abierta.
+      # Only restart when something changed: a restart kills the open session.
       if [ "$changed" = 1 ]; then
-        echo "Aplicando renderizado por software de Qt y reiniciando SDDM..."
+        echo "Applying Qt software rendering and restarting SDDM..."
         systemctl restart sddm
       else
-        echo "Renderizado por software de Qt ya configurado."
+        echo "Qt software rendering already configured."
       fi
     SHELL
   end
 
-  # Resolución del escritorio. Sin Guest Additions no hay auto-resize, y los
-  # valores que Omarchy elige solo en una VM son estrechos: modo 'preferred' da
-  # 1280x800 y la escala automática se va a 2, o sea un escritorio efectivo de
-  # 640x400 donde sus propios diálogos no caben.
+  # Desktop resolution. Without Guest Additions there is no auto-resize, and
+  # what Omarchy picks on its own inside a VM is cramped: mode 'preferred'
+  # gives 1280x800 and the automatic scale goes to 2, an effective desktop of
+  # 640x400 where its own dialogs don't fit.
   #
-  # Omarchy 4 configura Hyprland en Lua, así que esto se escribe en
-  # monitors.lua; 'hyprctl keyword' no vale ("can't work with non-legacy
-  # parsers"). Los modos que acepta la GPU emulada llegan hasta 4096x2160:
-  # míralos con 'hyprctl monitors all'.
+  # Omarchy 4 configures Hyprland in Lua, so this is written to monitors.lua;
+  # 'hyprctl keyword' won't do ("can't work with non-legacy parsers"). The
+  # emulated GPU offers modes up to 4096x2160: list them with
+  # 'hyprctl monitors all'.
   if config_data['resolution'].to_s != ''
     config.vm.provision 'display', type: 'shell', privileged: false,
                                    inline: <<~SHELL
@@ -163,35 +164,35 @@ Vagrant.configure('2') do |config|
       conf="$HOME/.config/hypr/monitors.lua"
       mkdir -p "$(dirname "$conf")"
 
-      want='-- Generado por omarchy-vagrant: cambia resolution/scale/gdk_scale en
-      -- config.json o config.local.json, no este archivo, que se reescribe.
+      want='-- Generated by omarchy-vagrant: change resolution/scale/gdk_scale in
+      -- config.json or config.local.json, not this file, which gets rewritten.
       local omarchy_gdk_scale = #{config_data['gdk_scale'] || 1}
       hl.env("GDK_SCALE", tostring(omarchy_gdk_scale))
       hl.monitor({ output = "", mode = "#{config_data['resolution']}", position = "auto", scale = #{config_data['scale'] || 1} })'
 
       if [ "$(cat "$conf" 2>/dev/null)" = "$want" ]; then
-        echo "Resolución ya configurada (#{config_data['resolution']})."
+        echo "Resolution already configured (#{config_data['resolution']})."
       else
         printf '%s\\n' "$want" > "$conf"
-        echo "Escrito monitors.lua: #{config_data['resolution']}, escala #{config_data['scale'] || 1}."
+        echo "Wrote monitors.lua: #{config_data['resolution']}, scale #{config_data['scale'] || 1}."
 
-        # Recargar solo si hay una sesión viva; en el primer up todavía no la hay.
+        # Reload only if a session is alive; on the first up there isn't one yet.
         export XDG_RUNTIME_DIR="/run/user/$(id -u)"
         sig=$(ls -t "$XDG_RUNTIME_DIR/hypr" 2>/dev/null | head -1 || true)
         if [ -n "$sig" ]; then
           HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl reload >/dev/null 2>&1 || true
-          echo "Hyprland recargado."
+          echo "Hyprland reloaded."
         fi
       fi
     SHELL
   end
 
-  # Herramientas extra, declaradas en config.json. Los helpers de Omarchy
-  # (omarchy-pkg-install, omarchy-pkg-aur-install) son TUIs de fzf y no sirven
-  # aquí, así que se usan los mismos comandos que ellos ejecutan por debajo.
+  # Extra tooling, declared in config.json. Omarchy's own helpers
+  # (omarchy-pkg-install, omarchy-pkg-aur-install) are fzf TUIs and are no use
+  # here, so this runs the same commands they run underneath.
   #
-  # Va sin privilegios a propósito: yay se niega a correr como root, y escala
-  # solo gracias al provisioner de sudo de más arriba.
+  # Unprivileged on purpose: yay refuses to run as root, and escalates by itself
+  # thanks to the sudo provisioner above.
   pkgs     = config_data['packages']         || []
   aur      = config_data['aur_packages']     || []
   webapps  = config_data['webapps']          || []
@@ -204,10 +205,10 @@ Vagrant.configure('2') do |config|
       }.join(' ')
     end.join("\n")
 
-    # 'omarchy install ...' no solo instala: el de VS Code, por ejemplo, apaga
-    # su autoactualización, lo apunta a gnome-libsecret y le aplica el tema de
-    # Omarchy. Por eso va después del AUR y merece la pena frente a instalar el
-    # paquete a pelo.
+    # 'omarchy install ...' does more than install: the VS Code one turns off
+    # its auto-updater, points it at gnome-libsecret and applies the Omarchy
+    # theme. That's why it runs after the AUR list and is worth preferring over
+    # installing the bare package.
     install_cmds = installs.map do |i|
       cmd = 'omarchy install ' + i.to_s.split.map { |t| Shellwords.escape(t) }.join(' ')
       "echo \"> #{cmd}\"\n#{cmd}"
@@ -220,19 +221,19 @@ Vagrant.configure('2') do |config|
       AUR=#{Shellwords.escape(aur.join(' '))}
 
       if [ -n "$PKGS" ] || [ -n "$AUR" ]; then
-        echo "Refrescando las bases de datos de pacman..."
+        echo "Refreshing pacman databases..."
         sudo pacman -Sy --noconfirm >/dev/null
       fi
 
       if [ -n "$PKGS" ]; then
-        echo "Paquetes oficiales: $PKGS"
+        echo "Official packages: $PKGS"
         sudo pacman -S --needed --noconfirm $PKGS
       fi
 
       if [ -n "$AUR" ]; then
-        echo "Paquetes del AUR: $AUR"
-        # --answerclean/--answerdiff son lo que evita que yay se plante en
-        # "Packages to cleanBuild?" esperando una respuesta que nunca llega.
+        echo "AUR packages: $AUR"
+        # --answerclean/--answerdiff are what stop yay from hanging on
+        # "Packages to cleanBuild?" waiting for an answer that never comes.
         yay -S --needed --noconfirm --removemake \\
             --answerclean None --answerdiff None $AUR
         sudo updatedb --prune-bind-mounts=no --add-prunepaths=/.snapshots || true
@@ -258,8 +259,9 @@ Vagrant.configure('2') do |config|
                   '--vram', config_data['vram_mb'].to_s,
                   '--accelerate3d', config_data['accelerate_3d'] ? 'on' : 'off',
                   '--clipboard-mode', 'bidirectional',
-                  # Disco primero: el disco vacío no arranca nada y cae al DVD;
-                  # ya instalado, arranca del disco e ignora la ISO.
+                  # Disk first: the empty disk boots nothing and falls through
+                  # to the DVD; once installed it boots from disk and ignores
+                  # the ISO.
                   '--boot1', 'disk', '--boot2', 'dvd', '--boot3', 'none', '--boot4', 'none']
 
     unless File.exist?(INSTALLED)
@@ -270,15 +272,15 @@ Vagrant.configure('2') do |config|
     end
   end
 
-  # Terminada la instalación, saca los dos medios y deja la marca.
+  # Once the install is done, eject both media and drop the marker.
   config.trigger.after :up do |trigger|
-    trigger.name = 'Desmontar medios de instalación'
+    trigger.name = 'Eject install media'
     trigger.ruby do |_env, _machine|
       next if File.exist?(INSTALLED)
 
-      # --forceunmount no es opcional: udiskie automonta los dos medios en el
-      # escritorio, y con el guest teniéndolos montados VirtualBox se niega a
-      # expulsarlos con VERR_PDM_MEDIA_LOCKED.
+      # --forceunmount is not optional: udiskie auto-mounts both media on the
+      # desktop, and while the guest has them mounted VirtualBox refuses to
+      # eject with VERR_PDM_MEDIA_LOCKED.
       failed = [1, 2].reject do |port|
         system(vboxmanage, 'storageattach', VM_NAME, '--storagectl', 'SATA',
                '--port', port.to_s, '--device', '0',
@@ -286,29 +288,29 @@ Vagrant.configure('2') do |config|
                out: File::NULL, err: File::NULL)
       end
 
-      # La marca solo se pone si de verdad se desmontaron: si no, el siguiente
-      # arranque debe volver a intentarlo en vez de dar el trabajo por hecho.
+      # The marker is only written if they really came out: otherwise the next
+      # boot must try again instead of assuming the job is done.
       if failed.empty?
         FileUtils.touch(INSTALLED)
-        puts 'Medios de instalación desmontados. La VM ya arranca sola desde disco.'
+        puts 'Install media ejected. The VM now boots from disk on its own.'
       else
-        puts "AVISO: no se pudieron desmontar los medios de los puertos #{failed.join(', ')}."
-        puts 'El cidata lleva el hash de tu contraseña y el escritorio lo automonta.'
-        puts 'Ejecuta scripts\\Eject-InstallMedia.ps1 para quitarlos.'
+        puts "WARNING: could not eject the media on port(s) #{failed.join(', ')}."
+        puts 'The cidata carries your password hash and the desktop auto-mounts it.'
+        puts 'Run scripts\\Eject-InstallMedia.ps1 to remove them.'
       end
     end
   end
 
   config.trigger.after :destroy do |trigger|
-    trigger.name = 'Limpiar marca de instalación'
+    trigger.name = 'Clean up install marker'
     trigger.ruby do |_env, _machine|
       File.delete(INSTALLED) if File.exist?(INSTALLED)
 
-      # VirtualBox en Windows reescribe Logs\VBoxHardening.log justo después de
-      # borrar la VM, así que la carpeta sobrevive vacía al destroy. El
-      # siguiente 'up' falla al renombrar la VM importada: "Could not rename
-      # the directory ... (VERR_ALREADY_EXISTS)". La quitamos, pero solo si no
-      # hay nada dentro salvo los logs.
+      # On Windows, VirtualBox rewrites Logs\VBoxHardening.log right after
+      # deleting the VM, so the folder survives the destroy. The next 'up' then
+      # fails to rename the imported VM: "Could not rename the directory ...
+      # (VERR_ALREADY_EXISTS)". Remove it, but only when nothing but the logs
+      # is left inside.
       begin
         props = IO.popen([vboxmanage, 'list', 'systemproperties'], &:read)
         base  = props[/^Default machine folder:\s+(.+)$/, 1]&.strip
@@ -319,24 +321,24 @@ Vagrant.configure('2') do |config|
 
         if (Dir.children(dir) - ['Logs']).empty?
           FileUtils.rm_rf(dir)
-          puts "Quitada la carpeta que VirtualBox dejó atrás: #{dir}"
+          puts "Removed the folder VirtualBox left behind: #{dir}"
         else
-          puts "Ojo: #{dir} sigue ahí y no está vacía. El próximo 'vagrant up' " \
-               'fallará al crear la VM hasta que la revises.'
+          puts "Heads up: #{dir} is still there and not empty. The next " \
+               "'vagrant up' will fail to create the VM until you look at it."
         end
       rescue StandardError => e
-        puts "No se pudo limpiar la carpeta de la VM: #{e.message}"
+        puts "Could not clean up the VM folder: #{e.message}"
       end
     end
   end
 
   config.vm.post_up_message = <<~MSG
-    Omarchy está arriba.
+    Omarchy is up.
 
-      Escritorio : la ventana de VirtualBox (Hyprland)
-      SSH        : vagrant ssh
-      Usuario    : #{config_data['username']}
+      Desktop  : the VirtualBox window (Hyprland)
+      SSH      : vagrant ssh
+      User     : #{config_data['username']}
 
-    Si la sesión gráfica se queda en negro, mira la sección "Gráficos" del README.
+    If the graphical session comes up black, see the "Graphics" section of the README.
   MSG
 end

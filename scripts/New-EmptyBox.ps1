@@ -1,17 +1,17 @@
 ﻿<#
 .SYNOPSIS
-    Construye y registra la caja Vagrant vacía sobre la que se instala Omarchy.
+    Builds and registers the empty Vagrant box Omarchy gets installed onto.
 .DESCRIPTION
-    No existe una caja de Omarchy: el sistema se instala desde la ISO. Pero
-    Vagrant necesita una caja para arrancar, así que fabricamos una: una VM con
-    firmware EFI, controladora SATA y un disco virgen, exportada a .box.
+    There is no Omarchy box: the system installs from an ISO. But Vagrant needs
+    a box to boot, so we make one: a VM with EFI firmware, a SATA controller
+    and a blank disk, exported to .box.
 
-    El truco es el mismo que documenta el manual de Omarchy para Proxmox: el
-    orden de arranque pone el disco primero, el disco vacío no arranca nada y
-    cae al DVD; ya instalado, arranca del disco y la ISO deja de importar.
+    The trick is the one Omarchy's manual documents for Proxmox: the boot order
+    puts the disk first, the empty disk boots nothing and falls through to the
+    DVD; once installed it boots from disk and the ISO stops mattering.
 
-    El tamaño del disco queda grabado en la caja, así que la caja se llama
-    omarchy-empty-<N>g. Cambiar disk_gb en config.json genera otra caja.
+    The disk size is baked into the box, so the box is named
+    omarchy-empty-<N>g. Changing disk_gb in config.json produces another box.
 #>
 [CmdletBinding()]
 param([switch] $Force)
@@ -27,7 +27,7 @@ $diskMib = [long] $cfg['disk_gb'] * 1024
 
 $existing = & vagrant box list 2>$null
 if (-not $Force -and $existing -and ($existing | Select-String -SimpleMatch "$boxName ")) {
-    Write-Host "La caja '$boxName' ya está registrada. Usa -Force para regenerarla."
+    Write-Host "Box '$boxName' is already registered. Use -Force to rebuild it."
     return
 }
 
@@ -36,14 +36,14 @@ $vmName  = "$boxName-builder"
 $export  = Join-Path $work 'export'
 $boxFile = Join-Path (Get-BuildDir) "$boxName.box"
 
-# Una corrida anterior interrumpida deja la VM registrada; quítala antes.
+# An interrupted earlier run leaves the VM registered; remove it first.
 & $vbox unregistervm $vmName --delete 2>$null | Out-Null
 if (Test-Path $work) { Remove-Item $work -Recurse -Force }
 New-Item -ItemType Directory -Path $work   | Out-Null
 New-Item -ItemType Directory -Path $export | Out-Null
 
 try {
-    Write-Host "Creando la VM plantilla ($diskMib MiB de disco, firmware EFI)..."
+    Write-Host "Creating the template VM ($diskMib MiB disk, EFI firmware)..."
     Invoke-Native $vbox @('createvm', '--name', $vmName, '--ostype', 'ArchLinux_64',
                           '--basefolder', $work, '--register')
 
@@ -54,7 +54,7 @@ try {
         '--graphicscontroller', 'vmsvga', '--vram', '128',
         '--nic1', 'nat')
 
-    # portcount 4: puerto 0 el disco, 1 la ISO de Omarchy, 2 el cidata.
+    # portcount 4: port 0 the disk, 1 the Omarchy ISO, 2 the cidata.
     Invoke-Native $vbox @('storagectl', $vmName, '--name', 'SATA', '--add', 'sata',
                           '--controller', 'IntelAhci', '--portcount', '4', '--bootable', 'on')
 
@@ -64,21 +64,21 @@ try {
     Invoke-Native $vbox @('storageattach', $vmName, '--storagectl', 'SATA',
                           '--port', '0', '--device', '0', '--type', 'hdd', '--medium', $vdi)
 
-    Write-Host "Exportando a OVF..."
+    Write-Host "Exporting to OVF..."
     $ovf = Join-Path $export 'box.ovf'
     Invoke-Native $vbox @('export', $vmName, '--output', $ovf)
 
-    # Formato de caja Vagrant: un tar con metadata.json, el .ovf y sus discos.
+    # Vagrant box format: a tar holding metadata.json, the .ovf and its disks.
     [IO.File]::WriteAllText(
         (Join-Path $export 'metadata.json'),
         '{"provider":"virtualbox"}',
         (New-Object Text.UTF8Encoding $false))
 
-    Write-Host "Empaquetando $boxFile..."
+    Write-Host "Packaging $boxFile..."
     if (Test-Path $boxFile) { Remove-Item $boxFile -Force }
     Invoke-Native 'tar.exe' @('-cf', $boxFile, '-C', $export, '.')
 
-    Write-Host "Registrando la caja '$boxName' en Vagrant..."
+    Write-Host "Registering box '$boxName' with Vagrant..."
     Invoke-Native 'vagrant' @('box', 'add', '--name', $boxName, '--force', $boxFile)
 }
 finally {
@@ -86,4 +86,4 @@ finally {
     if (Test-Path $work) { Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue }
 }
 
-Write-Host "Caja lista: $boxName"
+Write-Host "Box ready: $boxName"

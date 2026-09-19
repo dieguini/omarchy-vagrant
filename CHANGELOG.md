@@ -1,60 +1,65 @@
 # Changelog
 
-Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
-versionado según [SemVer](https://semver.org/lang/es/).
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+versioned with [SemVer](https://semver.org/).
 
-Como esto automatiza software de terceros, la versión habla del repo, no de
-Omarchy. La versión de Omarchy que se instala se elige en `config.json`
-(`omarchy_version`), y cada release dice contra cuál se verificó.
+Since this automates third-party software, the version describes the repo, not
+Omarchy. Which Omarchy version gets installed is chosen in `config.json`
+(`omarchy_version`), and every release states which one it was verified against.
+
+## [Unreleased]
+
+### Changed
+
+- Everything in the repo is now in English: README, changelog, code comments
+  and console output. The long README was split into `docs/`.
 
 ## [1.0.1] - 2026-09-19
 
-### Corregido
+### Fixed
 
-- **El desmontaje de los medios de instalación no funcionaba y además mentía.**
-  El escritorio automonta la ISO y el `cidata` con `udiskie`, y con el guest
-  teniéndolos montados VirtualBox responde `VERR_PDM_MEDIA_LOCKED`. El trigger
-  ignoraba ese error, imprimía que los había desmontado y ponía la marca de
-  hecho, así que el `cidata` — que lleva el hash de la contraseña — se quedaba
-  adjunto y montado en `/run/media/<usuario>/cidata`.
+- **Ejecting the install media didn't work, and lied about it.** The desktop
+  auto-mounts the ISO and the cidata with `udiskie`, and while the guest has
+  them mounted VirtualBox answers `VERR_PDM_MEDIA_LOCKED`. The trigger ignored
+  that error, printed that it had ejected them and wrote its done-marker
+  anyway — so the cidata, which carries the password hash, stayed attached and
+  mounted at `/run/media/<user>/cidata`.
 
-  Ahora se usa `--forceunmount`, y la marca solo se pone si de verdad se
-  desmontaron; si no, avisa y el siguiente arranque lo reintenta. Lo mismo en
-  `scripts\Eject-InstallMedia.ps1`, que ya falla en vez de callarse.
+  It now uses `--forceunmount`, and the marker is only written when they really
+  came out; otherwise it warns and the next boot retries. Same in
+  `scripts\Eject-InstallMedia.ps1`, which now fails instead of staying quiet.
 
 ## [1.0.0] - 2026-09-19
 
-Primera versión. Verificada de punta a punta contra **Omarchy 4.0.4** en
-VirtualBox 7.2.6 y Vagrant 2.4.9 sobre Windows 11: instalación desatendida,
-escritorio Hyprland funcionando y herramientas instaladas.
+First release. Verified end to end against **Omarchy 4.0.4** on VirtualBox
+7.2.6 and Vagrant 2.4.9 on Windows 11: unattended install, working Hyprland
+desktop, tools installed.
 
-### Añadido
+### Added
 
-- Instalación desatendida por disco `cidata`, el método que documenta el manual
-  de Omarchy. `bootstrap.ps1` descarga y verifica la ISO, genera el `cidata` y
-  un par de llaves SSH dedicado, y fabrica la caja Vagrant vacía con EFI.
-- Generación de la ISO `cidata` con IMAPI2, sin dependencias externas en
+- Unattended install via a `cidata` drive, the method Omarchy's manual
+  documents. `bootstrap.ps1` downloads and verifies the ISO, generates the
+  cidata and a dedicated SSH keypair, and builds the empty EFI Vagrant box.
+- `cidata` ISO generation with IMAPI2 — no external tooling needed on Windows.
+- `passwordless-sudo` provisioner: installs the sudoers rule Vagrant assumes.
+- `qt-software-rendering` provisioner: puts QtQuick in software for SDDM's
+  greeter and for the session, without which a VM has no desktop.
+- `display` provisioner: sets resolution and scale in `monitors.lua`.
+- `tools` provisioner: four declarative lists — `omarchy_installs`, `packages`,
+  `aur_packages` and `webapps`.
+- Automatic ejection of the ISO and the cidata once the install finishes: the
+  cidata carries the password hash.
+- Cleanup, in the `destroy` trigger, of the folder VirtualBox leaves behind on
   Windows.
-- Provisioner `passwordless-sudo`: instala la regla de sudoers que Vagrant da
-  por hecha.
-- Provisioner `qt-software-rendering`: pone QtQuick en software para el greeter
-  de SDDM y para la sesión, sin lo cual no hay escritorio en una VM.
-- Provisioner `display`: fija resolución y escala en `monitors.lua`.
-- Provisioner `tools`: cuatro listas declarativas — `omarchy_installs`,
-  `packages`, `aur_packages` y `webapps`.
-- Desmontaje automático de la ISO y del `cidata` al terminar la instalación: el
-  `cidata` lleva el hash de la contraseña.
-- Limpieza, en el trigger de `destroy`, de la carpeta que VirtualBox deja atrás
-  en Windows.
 
-### Notas
+### Notes
 
-- Sin carpetas compartidas: Omarchy no trae Guest Additions.
-- Sin cifrado de disco: pediría la frase LUKS en cada arranque y rompería lo
-  desatendido.
-- El rendimiento gráfico es el que es. Para solo probar Omarchy,
-  [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) usa QEMU
-  con virgl y rinde mejor.
+- No synced folders: Omarchy ships no Guest Additions.
+- No disk encryption: it would ask for the LUKS passphrase at every boot and
+  break the unattended part.
+- Graphics performance is what it is. To just try Omarchy,
+  [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) uses
+  QEMU with virgl and performs better.
 
 [1.0.1]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.1
 [1.0.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.0
