@@ -20,6 +20,7 @@
   "keyboard": "us",
   "packages": [],
   "aur_packages": [],
+  "omarchy_installs": [],
   "webapps": [],
   "boot_timeout_seconds": 3600,
   "forwarded_ports": []

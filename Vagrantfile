@@ -153,15 +153,25 @@ Vagrant.configure('2') do |config|
   #
   # Va sin privilegios a propósito: yay se niega a correr como root, y escala
   # solo gracias al provisioner de sudo de más arriba.
-  pkgs    = config_data['packages']      || []
-  aur     = config_data['aur_packages']  || []
-  webapps = config_data['webapps']       || []
+  pkgs     = config_data['packages']         || []
+  aur      = config_data['aur_packages']     || []
+  webapps  = config_data['webapps']          || []
+  installs = config_data['omarchy_installs'] || []
 
-  if pkgs.any? || aur.any? || webapps.any?
+  if pkgs.any? || aur.any? || webapps.any? || installs.any?
     webapp_cmds = webapps.map do |w|
       'omarchy-webapp-install ' + [w['name'], w['url'], w['icon']].map { |a|
         Shellwords.escape(a.to_s)
       }.join(' ')
+    end.join("\n")
+
+    # 'omarchy install ...' no solo instala: el de VS Code, por ejemplo, apaga
+    # su autoactualización, lo apunta a gnome-libsecret y le aplica el tema de
+    # Omarchy. Por eso va después del AUR y merece la pena frente a instalar el
+    # paquete a pelo.
+    install_cmds = installs.map do |i|
+      cmd = 'omarchy install ' + i.to_s.split.map { |t| Shellwords.escape(t) }.join(' ')
+      "echo \"> #{cmd}\"\n#{cmd}"
     end.join("\n")
 
     config.vm.provision 'tools', type: 'shell', privileged: false,
@@ -188,6 +198,8 @@ Vagrant.configure('2') do |config|
             --answerclean None --answerdiff None $AUR
         sudo updatedb --prune-bind-mounts=no --add-prunepaths=/.snapshots || true
       fi
+
+      #{install_cmds}
 
       #{webapp_cmds}
     SHELL

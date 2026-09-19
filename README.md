@@ -110,13 +110,14 @@ Claves disponibles, con sus defaults en `config.json`:
 
 ### Instalar herramientas
 
-Tres listas más en `config.local.json` declaran qué lleva la VM además de lo que
+Cuatro listas en `config.local.json` declaran qué lleva la VM además de lo que
 trae Omarchy. Se aplican en cada `vagrant up`, y son idempotentes:
 
 ```json
 {
-  "packages": ["tree", "httpie", "jq"],
+  "packages": ["httpie", "jq"],
   "aur_packages": ["visual-studio-code-bin"],
+  "omarchy_installs": ["editor vscode", "dev-env node", "browser brave"],
   "webapps": [
     { "name": "Claude", "url": "https://claude.ai", "icon": "claude" }
   ]
@@ -127,8 +128,18 @@ trae Omarchy. Se aplican en cada `vagrant up`, y son idempotentes:
 - `aur_packages` → `yay`. El provisioner pasa `--answerclean None --answerdiff
   None`, que es lo que evita que `yay` se plante en *"Packages to cleanBuild?"*
   esperando una respuesta que en un provisioner no llega nunca.
+- `omarchy_installs` → `omarchy install …`, los instaladores curados de Omarchy.
+  **Prefiere esta lista cuando exista una entrada para lo que quieres**, porque
+  no solo instalan: `editor vscode` apaga la autoactualización de VS Code (las
+  actualizaciones las lleva Omarchy), lo apunta a `gnome-libsecret` y le aplica
+  el tema del sistema. Mira el catálogo con `vagrant ssh -c 'omarchy install --help'`:
+  hay `editor`, `browser`, `dev-env` (ruby, node, bun, go, python, rust, java…),
+  `ai`, `docker dbs` y más.
 - `webapps` → `omarchy-webapp-install`, que crea el lanzador de una web como si
   fuera una app. El `icon` puede ser un nombre de icono o la URL de uno.
+
+Las dos primeras listas son la vía de escape para lo que no tenga instalador
+curado. El orden de ejecución es el de arriba.
 
 Para aplicarlas sin reiniciar la VM:
 
@@ -242,6 +253,11 @@ instalación normal. Vagrant da por hecho el sudo sin contraseña de sus cajas: 
 eso un provisioner instala `/etc/sudoers.d/99-vagrant` con `NOPASSWD`, que es la
 convención de todas las cajas Vagrant. Es una VM de desarrollo desechable; si no
 te vale, `"passwordless_sudo": false` y lo dejas como lo instaló Omarchy.
+
+Omarchy trae su propio `omarchy sudo passwordless`, pero no sirve para esto: es
+un *toggle* que concede el permiso 15 minutos por defecto y arma un timer de
+systemd para retirarlo. Está pensado para una sesión interactiva, no para dejar
+la máquina en un estado estable.
 
 Ojo con un detalle contraintuitivo: esto **no** se arregla con
 `config.ssh.sudo_command`. Ahí Vagrant sustituye `%c` por el *shell*, y le pasa
