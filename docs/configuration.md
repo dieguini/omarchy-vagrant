@@ -32,6 +32,7 @@ Copy-Item examples\iac.json config.local.json
 | `iac.json` | Terraform, Terragrunt, Ansible, kubectl, k9s, helm, and the AWS and Azure CLIs |
 | `web-dev.json` | Node and Python via `dev-env`, an editor and a browser, with ports forwarded |
 | `minimal.json` | Headless: no desktop window, SSH only, small |
+| `agent-vm.json` | Claude Code inside the VM plus the IaC toolchain — an agent sandbox that can't reach the host |
 
 Because `config.local.json` is gitignored, whatever you build there lives on one
 machine and isn't backed up. If it's a setup you'd want again, add it to
