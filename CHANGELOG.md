@@ -9,6 +9,12 @@ Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 
 ## [Unreleased]
 
+### Added
+
+- `examples/` with ready-made profiles to copy into `config.local.json`: an
+  infrastructure-as-code workstation, a web dev box, and a headless one. Since
+  `config.local.json` is gitignored, a setup worth keeping belongs here.
+
 ### Changed
 
 - Everything in the repo is now in English: README, changelog, code comments

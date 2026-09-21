@@ -1,0 +1,17 @@
+{
+  "//": "Web development: Node and Python runtimes, an editor and a browser, with a dev port forwarded.",
+
+  "omarchy_installs": [
+    "editor vscode",
+    "dev-env node",
+    "dev-env python",
+    "browser brave"
+  ],
+
+  "packages": ["jq", "httpie"],
+
+  "forwarded_ports": [
+    { "guest": 3000, "host": 3000 },
+    { "guest": 5432, "host": 5432 }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "//": "Headless: no desktop window, SSH only. Useful on a laptop or for CI-style use.",
+
+  "gui": false,
+  "software_rendering": false,
+  "resolution": "",
+  "memory_mb": 4096,
+  "cpus": 2
+}

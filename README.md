@@ -47,6 +47,13 @@ your password and identity stay out of git.
 }
 ```
 
+`examples/` has ready-made profiles to start from — an IaC workstation, a web
+dev box, a headless one:
+
+```powershell
+Copy-Item examples\iac.json config.local.json
+```
+
 Every key, and the four lists that declare what software the VM carries, are in
 **[docs/configuration.md](docs/configuration.md)**.
 

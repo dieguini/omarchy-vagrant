@@ -19,6 +19,24 @@ is gitignored, so your password and identity stay out of git.
 }
 ```
 
+## Starting from an example
+
+`examples/` has ready-made profiles. Copy one and edit from there:
+
+```powershell
+Copy-Item examples\iac.json config.local.json
+```
+
+| Profile | What it sets up |
+|---|---|
+| `iac.json` | Terraform, Terragrunt, Ansible, kubectl, k9s, helm, and the AWS and Azure CLIs |
+| `web-dev.json` | Node and Python via `dev-env`, an editor and a browser, with ports forwarded |
+| `minimal.json` | Headless: no desktop window, SSH only, small |
+
+Because `config.local.json` is gitignored, whatever you build there lives on one
+machine and isn't backed up. If it's a setup you'd want again, add it to
+`examples/` — that folder **is** tracked.
+
 ## Every key
 
 | Key | Default | Notes |
