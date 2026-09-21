@@ -65,7 +65,10 @@ Every key, and the four lists that declare what software the VM carries, are in
 | **[Configuration](docs/configuration.md)** | Every config key, and installing packages, AUR, and web apps |
 | **[Graphics](docs/graphics.md)** | Why the desktop comes up black without help, and setting resolution |
 | **[Security](docs/security.md)** | Where the password hash lives and what the sudo rule does |
+| **[Coding agents](docs/agents.md)** | Omarchy's default-agent mechanism, and running one inside the VM |
 | **[Troubleshooting](docs/troubleshooting.md)** | Recovering from an interrupted `vagrant up` |
+
+Working on this repo? Start with **[AGENTS.md](AGENTS.md)**.
 
 The story of building this, including the three failures between a finished
 install and a usable desktop, is written up in

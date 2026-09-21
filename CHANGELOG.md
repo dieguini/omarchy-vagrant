@@ -11,6 +11,10 @@ Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 
 ### Added
 
+- `default_agent`: installs a coding agent through mise and records it as
+  Omarchy's default. Documented in `docs/agents.md`.
+- `AGENTS.md`: how to work on this repo, starting with reading upstream
+  before automating it.
 - `examples/` with ready-made profiles to copy into `config.local.json`: an
   infrastructure-as-code workstation, a web dev box, and a headless one. Since
   `config.local.json` is gitignored, a setup worth keeping belongs here.

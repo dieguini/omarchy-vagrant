@@ -187,6 +187,64 @@ Vagrant.configure('2') do |config|
     SHELL
   end
 
+  # Omarchy has a first-class notion of a default coding agent, stored in
+  # ~/.config/omarchy/defaults/agent and launched by `omarchy agent`. It ships
+  # with none set, on purpose.
+  #
+  # `omarchy default agent <name>` sets AND installs it, but it execs the agent
+  # at the end, which would hang a provisioner. So this does the two
+  # non-interactive halves itself, the same way that script does them.
+  #
+  # Installing the agent any other way is a trap: the script only recognises a
+  # pre-existing install at ~/.local/bin/<agent>. A pacman package in /usr/bin
+  # is invisible to it, so the menu would later install a second copy through
+  # mise. Use mise, like upstream does.
+  if config_data['default_agent'].to_s != ''
+    config.vm.provision 'agent', type: 'shell', privileged: false,
+                                 inline: <<~SHELL
+      set -eu
+      agent=#{Shellwords.escape(config_data['default_agent'])}
+
+      # Agents refuse to remember trust for $HOME, so omarchy-agent runs from
+      # ~/Work when launched from the keybinding or the menu.
+      mkdir -p "$HOME/Work"
+
+      case "$agent" in
+        openclaw|hermes)
+          # These two reach mise through their own installers, which pin an
+          # interpreter that a bare `mise use` has nowhere to express.
+          "omarchy-install-$agent-cli" --check || "omarchy-install-$agent-cli" --now
+          ;;
+        muse)
+          echo "muse installs through Meta's own launcher; set it with 'omarchy default agent muse' inside the VM." >&2
+          exit 1
+          ;;
+        *)
+          case "$agent" in
+            grok) pkg="npm:@xai-official/grok" ;;
+            omp)  pkg="github:can1357/oh-my-pi" ;;
+            *)    pkg="$agent" ;;
+          esac
+          if mise where "$pkg" >/dev/null 2>&1; then
+            echo "Agent $agent already installed."
+          else
+            echo "Installing $agent through mise..."
+            mise use -g "$pkg"
+          fi
+          ;;
+      esac
+
+      conf="$HOME/.config/omarchy/defaults/agent"
+      mkdir -p "$(dirname "$conf")"
+      if [ "$(cat "$conf" 2>/dev/null)" = "$agent" ]; then
+        echo "Default agent already $agent."
+      else
+        printf '%s\\n' "$agent" > "$conf"
+        echo "Default agent set to $agent."
+      fi
+    SHELL
+  end
+
   # Extra tooling, declared in config.json. Omarchy's own helpers
   # (omarchy-pkg-install, omarchy-pkg-aur-install) are fzf TUIs and are no use
   # here, so this runs the same commands they run underneath.

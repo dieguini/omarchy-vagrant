@@ -1,9 +1,6 @@
 {
   "//": "Agent sandbox: Claude Code inside the VM, with the IaC toolchain to work on.",
   "//2": "The point is blast radius -- an agent here cannot reach the Windows host, and vagrant destroy undoes anything.",
-
-  "aur_packages": ["claude-code"],
-
   "packages": [
     "terraform",
     "terragrunt",
@@ -16,9 +13,10 @@
     "jq",
     "httpie"
   ],
-
-  "omarchy_installs": ["editor vscode"],
-
+  "omarchy_installs": [
+    "editor vscode"
+  ],
   "memory_mb": 12288,
-  "cpus": 6
+  "cpus": 6,
+  "default_agent": "claude"
 }

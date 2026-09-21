@@ -50,6 +50,7 @@ machine and isn't backed up. If it's a setup you'd want again, add it to
 | `accelerate_3d`, `vram_mb` | `true` / 128 | See [graphics](graphics.md) |
 | `resolution`, `scale`, `gdk_scale` | `1920x1080@60` / 1 / 1 | See [graphics](graphics.md). Leave `resolution` empty to skip |
 | `software_rendering` | `true` | Puts QtQuick in software. Without it there is no desktop |
+| `default_agent` | empty | Installs a coding agent and makes it Omarchy's default. See [agents](agents.md) |
 | `passwordless_sudo` | `true` | Installs the sudoers rule Vagrant assumes. See [security](security.md) |
 | `username`, `password` | `omarchy` | The user must satisfy Omarchy's rules: lowercase, starting with a letter or `_` |
 | `full_name`, `email_address` | empty | Used for the git identity inside the VM |

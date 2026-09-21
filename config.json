@@ -24,6 +24,7 @@
   "packages": [],
   "aur_packages": [],
   "omarchy_installs": [],
+  "default_agent": "",
   "webapps": [],
   "boot_timeout_seconds": 3600,
   "forwarded_ports": []
