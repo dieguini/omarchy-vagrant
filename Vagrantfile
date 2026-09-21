@@ -187,6 +187,31 @@ Vagrant.configure('2') do |config|
     SHELL
   end
 
+  # Git identity. The installer writes user_full_name.txt and
+  # user_email_address.txt from the cidata, but only on a fresh install and
+  # only when those keys are set. Without an identity git refuses to commit,
+  # which an agent working in here hits immediately.
+  if config_data['full_name'].to_s != '' && config_data['email_address'].to_s != ''
+    config.vm.provision 'git-identity', type: 'shell', privileged: false,
+                                        inline: <<~SHELL
+      set -eu
+      name=#{Shellwords.escape(config_data['full_name'])}
+      mail=#{Shellwords.escape(config_data['email_address'])}
+
+      if [ "$(git config --global user.name 2>/dev/null)" = "$name" ] &&
+         [ "$(git config --global user.email 2>/dev/null)" = "$mail" ]; then
+        echo "Git identity already set to $name <$mail>."
+      else
+        git config --global user.name "$name"
+        git config --global user.email "$mail"
+        echo "Git identity set to $name <$mail>."
+      fi
+
+      # Matches what every repo this VM will touch already uses.
+      git config --global init.defaultBranch main
+    SHELL
+  end
+
   # Omarchy has a first-class notion of a default coding agent, stored in
   # ~/.config/omarchy/defaults/agent and launched by `omarchy agent`. It ships
   # with none set, on purpose.

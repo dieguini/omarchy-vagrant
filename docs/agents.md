@@ -56,11 +56,25 @@ Two details worth knowing:
 - Launching from `$HOME` changes directory to `~/Work` first, because agents
   won't remember trust for `$HOME`. The provisioner creates that folder.
 
+## Git identity
+
+An agent that can't commit isn't much use, and a fresh VM has no git identity
+unless `full_name` and `email_address` are set — the installer writes them from
+the cidata, but only on a fresh install. Set both and the `git-identity`
+provisioner applies them to the running VM too.
+
 ## Signing in
 
-The provisioner installs the agent and nothing else. Authentication is yours:
-open a terminal in the VM and run the agent once — for Claude Code, `claude` —
-which opens a browser to log in.
+The provisioners install and wire things up; they never authenticate. Two
+things are yours to do, once, inside the VM:
+
+```bash
+claude          # opens a browser to sign in
+gh auth login   # gives you a code to paste in the browser
+```
+
+Neither can be automated from the host, and neither should be: they're your
+credentials. Avoid long-lived tokens in here — see the warning below.
 
 ## Why bother running an agent in here
 
