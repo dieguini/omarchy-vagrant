@@ -7,7 +7,11 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
-## [Unreleased]
+## [1.1.0] - 2026-09-22
+
+Verified against **Omarchy 4.0.4** on VirtualBox 7.2.6 and Vagrant 2.4.9,
+Windows 11 host. Every provisioner was run against a live VM and checked for
+idempotency on a second pass.
 
 ### Added
 
@@ -83,5 +87,6 @@ desktop, tools installed.
   [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) uses
   QEMU with virgl and performs better.
 
+[1.1.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.1.0
 [1.0.1]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.1
 [1.0.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.0
