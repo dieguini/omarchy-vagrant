@@ -21,5 +21,8 @@
   "default_agent": "claude",
   "az_extensions": [
     "azure-devops"
+  ],
+  "mise_tools": [
+    "codex"
   ]
 }

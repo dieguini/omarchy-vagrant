@@ -267,6 +267,54 @@ Vagrant.configure('2') do |config|
     SHELL
   end
 
+  # Keyboard layout. The cidata sets it at install time, but only then, and
+  # only for a fresh install -- so a VM created before you settled on a layout
+  # keeps typing in the old one. This applies it to the running machine.
+  #
+  # input.lua is the user's own file and ships with useful commented examples,
+  # so this maintains a delimited block inside it rather than rewriting it.
+  if config_data['keyboard'].to_s != '' && config_data['keyboard'].to_s != 'us'
+    config.vm.provision 'keyboard', type: 'shell', privileged: false,
+                                    inline: <<~SHELL
+      set -eu
+      layout=#{Shellwords.escape(config_data['keyboard'].to_s)}
+      variant=#{Shellwords.escape(config_data['keyboard_variant'].to_s)}
+
+      conf="$HOME/.config/hypr/input.lua"
+      mkdir -p "$(dirname "$conf")"
+      touch "$conf"
+
+      begin='-- >>> omarchy-vagrant keyboard >>>'
+      end='-- <<< omarchy-vagrant keyboard <<<'
+      if [ -n "$variant" ]; then
+        line="hl.config({ input = { kb_layout = \\"$layout\\", kb_variant = \\"$variant\\" } })"
+      else
+        line="hl.config({ input = { kb_layout = \\"$layout\\" } })"
+      fi
+      block="$begin
+      $line
+      $end"
+
+      current=$(awk -v b="$begin" -v e="$end" 'index($0,b){f=1} f{print} index($0,e){f=0}' "$conf")
+      if [ "$current" = "$block" ]; then
+        echo "Keyboard layout already $layout."
+      else
+        tmp=$(mktemp)
+        awk -v b="$begin" -v e="$end" 'index($0,b){f=1} !f{print} index($0,e){f=0}' "$conf" > "$tmp"
+        { cat "$tmp"; printf '%s\\n' "$block"; } > "$conf"
+        rm -f "$tmp"
+        echo "Keyboard layout set to $layout."
+
+        export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+        sig=$(ls -t "$XDG_RUNTIME_DIR/hypr" 2>/dev/null | head -1 || true)
+        if [ -n "$sig" ]; then
+          HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl reload >/dev/null 2>&1 || true
+          echo "Hyprland reloaded."
+        fi
+      fi
+    SHELL
+  end
+
   # Git identity. The installer writes user_full_name.txt and
   # user_email_address.txt from the cidata, but only on a fresh install and
   # only when those keys are set. Without an identity git refuses to commit,
@@ -380,6 +428,26 @@ Vagrant.configure('2') do |config|
         printf '%s\\n' "$agent" > "$conf"
         echo "Default agent set to $agent."
       fi
+    SHELL
+  end
+
+  # Extra tools through mise, which is how Omarchy installs coding agents and
+  # language runtimes. Use this for a second agent (having codex installed
+  # alongside claude means `omarchy default agent codex` later just flips the
+  # default instead of installing), or for anything else in mise's registry.
+  mise_tools = config_data['mise_tools'] || []
+  if mise_tools.any?
+    config.vm.provision 'mise', type: 'shell', privileged: false,
+                                inline: <<~SHELL
+      set -eu
+      for tool in #{mise_tools.map { |t| Shellwords.escape(t.to_s) }.join(' ')}; do
+        if mise where "$tool" >/dev/null 2>&1; then
+          echo "mise tool $tool already installed."
+        else
+          echo "Installing $tool through mise..."
+          mise use -g "$tool"
+        fi
+      done
     SHELL
   end
 

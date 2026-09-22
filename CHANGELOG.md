@@ -11,6 +11,18 @@ Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 
 ### Added
 
+- `mise_tools`: extra tools through mise, which is how Omarchy installs coding
+  agents. Having `codex` alongside `claude` means switching the default later
+  is a flag, not an install.
+- `keyboard` now also applies to the running desktop, not just the install. A
+  VM whose layout does not match the physical keyboard is a quiet source of
+  mistyped passwords and misplaced symbols.
+- `az_extensions`: Azure CLI extensions per machine — `azure-cli` ships without
+  the `azure-devops` one, so `az repos` does not exist until it is added.
+- `screensaver_text`, `screensaver_seconds`, `lock_seconds`: branding and idle
+  timing.
+- `git-identity`: the identity an agent needs to commit, plus a libsecret
+  credential helper so PATs stay out of plaintext.
 - `default_agent`: installs a coding agent through mise and records it as
   Omarchy's default. Documented in `docs/agents.md`.
 - `AGENTS.md`: how to work on this repo, starting with reading upstream
