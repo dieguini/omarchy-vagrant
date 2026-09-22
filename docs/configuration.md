@@ -50,6 +50,10 @@ machine and isn't backed up. If it's a setup you'd want again, add it to
 | `accelerate_3d`, `vram_mb` | `true` / 128 | See [graphics](graphics.md) |
 | `resolution`, `scale`, `gdk_scale` | `1920x1080@60` / 1 / 1 | See [graphics](graphics.md). Leave `resolution` empty to skip |
 | `software_rendering` | `true` | Puts QtQuick in software. Without it there is no desktop |
+| `screensaver_text` | empty | Renders this name as ASCII art for the screensaver and the About panel |
+| `screensaver_font` | `standard` | A figlet font for it |
+| `screensaver_seconds` | empty | Idle seconds before the screensaver. Omarchy's own default is 150 |
+| `lock_seconds` | empty | Idle seconds before the session locks. Omarchy's default is 300 |
 | `mise_tools` | `[]` | Extra tools through mise — a second agent such as `codex`, or any runtime |
 | `keyboard_variant` | empty | An xkb variant for `keyboard`, e.g. `intl` |
 | `az_extensions` | `[]` | Azure CLI extensions to add, e.g. `azure-devops`. See [Azure DevOps](azure-devops.md) |

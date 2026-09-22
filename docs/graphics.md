@@ -60,3 +60,40 @@ That file is rewritten on every `vagrant up`, so configure resolution from
 
 If the desktop ends up larger than the VirtualBox window, the **View** menu has
 *Scaled Mode* and the window scaling settings.
+
+## Screensaver and idle
+
+Omarchy shows its screensaver after 150 seconds idle and locks the session at
+300, so the screensaver only ever gets two and a half minutes before the screen
+goes black. In a VM you usually want the opposite — and a VM you reach over SSH
+rarely wants a lock screen at all.
+
+```json
+{
+  "screensaver_seconds": 600,
+  "lock_seconds": 86400,
+  "screensaver_text": "yourname"
+}
+```
+
+Two things that are easy to misread as bugs:
+
+**There is no value for "never".** `IdleModel.secondsFromConfig` takes any
+finite number ≥ 0 and falls back to Omarchy's default for anything else, so a
+negative number or `null` restores 300 rather than disabling the lock. A
+timeout far in the future is how you effectively switch it off.
+
+**The screensaver dismisses on any input, which in a VM includes your host
+mouse crossing the window.** With VirtualBox mouse integration the guest sees
+pointer movement without a click, so the screensaver can look like it refuses
+to stay. Move the pointer off the window to watch it run.
+
+To pause it without changing configuration, Omarchy has `omarchy toggle idle`
+(*Stay Awake* — suspends both screensaver and lock, with an indicator in the
+bar) and `omarchy toggle screensaver` for the screensaver alone.
+
+`screensaver_text` is rendered with figlet into the two files Omarchy reads,
+`~/.config/omarchy/branding/screensaver.txt` and `about.txt`. The About panel is
+54 columns wide, so a name too wide for it falls back to a narrower font there
+rather than being clipped. `omarchy branding screensaver reset` restores the
+Omarchy logo.
