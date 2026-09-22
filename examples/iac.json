@@ -1,6 +1,5 @@
 {
   "//": "Infrastructure-as-code workstation: Terraform, Ansible, Kubernetes and the cloud CLIs.",
-
   "packages": [
     "terraform",
     "terragrunt",
@@ -13,9 +12,12 @@
     "jq",
     "httpie"
   ],
-
-  "omarchy_installs": ["editor vscode"],
-
+  "omarchy_installs": [
+    "editor vscode"
+  ],
   "memory_mb": 12288,
-  "cpus": 6
+  "cpus": 6,
+  "az_extensions": [
+    "azure-devops"
+  ]
 }

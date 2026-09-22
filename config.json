@@ -23,8 +23,13 @@
   "keyboard": "us",
   "packages": [],
   "aur_packages": [],
+  "az_extensions": [],
   "omarchy_installs": [],
   "default_agent": "",
+  "screensaver_text": "",
+  "screensaver_font": "standard",
+  "screensaver_seconds": "",
+  "lock_seconds": "",
   "webapps": [],
   "boot_timeout_seconds": 3600,
   "forwarded_ports": []

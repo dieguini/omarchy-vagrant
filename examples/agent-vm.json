@@ -18,5 +18,8 @@
   ],
   "memory_mb": 12288,
   "cpus": 6,
-  "default_agent": "claude"
+  "default_agent": "claude",
+  "az_extensions": [
+    "azure-devops"
+  ]
 }

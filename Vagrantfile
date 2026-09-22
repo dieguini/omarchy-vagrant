@@ -187,6 +187,86 @@ Vagrant.configure('2') do |config|
     SHELL
   end
 
+  # Idle timing. Omarchy's shell shows the screensaver after 150s and locks the
+  # session at 300s, so the screensaver only ever gets 2.5 minutes before the
+  # screen goes black. In a VM you usually want the opposite: the screensaver
+  # up quickly and staying.
+  #
+  # There is no "never" value -- IdleModel.secondsFromConfig takes any finite
+  # number >= 0 and falls back to the default for anything else -- so a locking
+  # timeout far in the future is how you effectively switch it off.
+  #
+  # ~/.config/omarchy/shell.json is authoritative: the shell does not merge
+  # defaults back in, so this edits the file in place with jq instead of
+  # rewriting it.
+  if config_data['screensaver_seconds'].to_s != '' || config_data['lock_seconds'].to_s != ''
+    config.vm.provision 'idle', type: 'shell', privileged: false,
+                                inline: <<~SHELL
+      set -eu
+      scr=#{(config_data['screensaver_seconds'] || 150).to_i}
+      lck=#{(config_data['lock_seconds'] || 300).to_i}
+      conf="$HOME/.config/omarchy/shell.json"
+
+      [ -f "$conf" ] || { echo "No $conf yet; log into the desktop once first." >&2; exit 0; }
+
+      if [ "$(jq -r '.idle.screensaver // empty' "$conf")" = "$scr" ] &&
+         [ "$(jq -r '.idle.lock // empty' "$conf")" = "$lck" ]; then
+        echo "Idle timings already screensaver=${scr}s lock=${lck}s."
+      else
+        tmp=$(mktemp)
+        jq --argjson s "$scr" --argjson l "$lck" \\
+           '.idle = ((.idle // {}) + {screensaver: $s, lock: $l})' "$conf" > "$tmp"
+        mv "$tmp" "$conf"
+        echo "Idle timings set: screensaver=${scr}s lock=${lck}s."
+        echo "Takes effect when the shell restarts (omarchy restart shell, or next login)."
+      fi
+    SHELL
+  end
+
+  # Screensaver branding. Omarchy reads plain ASCII art from
+  # ~/.config/omarchy/branding/screensaver.txt and animates it with a random
+  # TTE effect. `omarchy branding screensaver text` opens it in an editor,
+  # which is no use unattended, so this generates it with figlet instead.
+  # `omarchy branding screensaver reset` restores the Omarchy logo.
+  if config_data['screensaver_text'].to_s != ''
+    config.vm.provision 'branding', type: 'shell', privileged: false,
+                                    inline: <<~SHELL
+      set -eu
+      text=#{Shellwords.escape(config_data['screensaver_text'].to_s)}
+      font=#{Shellwords.escape((config_data['screensaver_font'] || 'standard').to_s)}
+
+      command -v figlet >/dev/null 2>&1 || {
+        echo "Installing figlet..."
+        sudo pacman -S --needed --noconfirm figlet >/dev/null
+      }
+
+      dir="$HOME/.config/omarchy/branding"
+      mkdir -p "$dir"
+
+      write_branding() {
+        # $1 file, $2 rendered art, $3 label
+        if [ "$(cat "$dir/$1" 2>/dev/null)" = "$2" ]; then
+          echo "$3 branding already reads \\"$text\\"."
+        else
+          printf '%s\\n' "$2" > "$dir/$1"
+          echo "$3 branding set to \\"$text\\"."
+        fi
+      }
+
+      write_branding screensaver.txt "$(figlet -w 200 -f "$font" "$text")" Screensaver
+
+      # The About panel is 54 columns wide; anything wider gets clipped, so
+      # fall back to a narrower font rather than silently cutting the name off.
+      about=$(figlet -w 54 -f "$font" "$text")
+      widest=$(printf '%s\\n' "$about" | awk '{ if (length > m) m = length } END { print m+0 }')
+      if [ "$widest" -gt 54 ]; then
+        about=$(figlet -w 54 -f small "$text")
+        echo "Name too wide for the About panel in '$font'; using 'small' there."
+      fi
+      write_branding about.txt "$about" About
+    SHELL
+  end
+
   # Git identity. The installer writes user_full_name.txt and
   # user_email_address.txt from the cidata, but only on a fresh install and
   # only when those keys are set. Without an identity git refuses to commit,
@@ -209,6 +289,39 @@ Vagrant.configure('2') do |config|
 
       # Matches what every repo this VM will touch already uses.
       git config --global init.defaultBranch main
+
+      # Keep tokens out of plaintext. Azure DevOps and GitHub over HTTPS both
+      # want a PAT; libsecret puts it in the keyring the desktop already runs
+      # for VS Code, instead of ~/.git-credentials.
+      helper=/usr/lib/git-core/git-credential-libsecret
+      if [ -x "$helper" ] && [ "$(git config --global credential.helper)" != "$helper" ]; then
+        git config --global credential.helper "$helper"
+        echo "Git credential helper set to libsecret."
+      fi
+    SHELL
+  end
+
+  # Azure CLI extensions. `az` itself comes from the packages list; the
+  # subcommands for Azure DevOps (az repos / pipelines / boards) live in a
+  # separate extension that has to be added per machine.
+  az_exts = config_data['az_extensions'] || []
+  if az_exts.any?
+    config.vm.provision 'azure', type: 'shell', privileged: false,
+                                 inline: <<~SHELL
+      set -eu
+      command -v az >/dev/null 2>&1 || {
+        echo "az is not installed; add \\"azure-cli\\" to packages first." >&2
+        exit 1
+      }
+
+      for ext in #{az_exts.map { |e| Shellwords.escape(e.to_s) }.join(' ')}; do
+        if az extension show --name "$ext" >/dev/null 2>&1; then
+          echo "az extension $ext already installed."
+        else
+          echo "Installing az extension $ext..."
+          az extension add --name "$ext" --only-show-errors >/dev/null
+        fi
+      done
     SHELL
   end
 
