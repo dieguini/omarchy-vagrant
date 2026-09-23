@@ -335,8 +335,16 @@ Vagrant.configure('2') do |config|
         echo "Git identity set to $name <$mail>."
       fi
 
-      # Matches what every repo this VM will touch already uses.
-      git config --global init.defaultBranch main
+      # The name a `git init` gives its first branch. It matters more than it
+      # looks: Azure DevOps refuses to set a default branch that does not exist
+      # yet (TF401020), so an empty repo's default is decided by whichever
+      # branch the first push creates. Set this to whatever the organisation
+      # actually uses, not to whatever git ships with.
+      branch=#{Shellwords.escape((config_data['git_default_branch'] || 'main').to_s)}
+      if [ "$(git config --global init.defaultBranch)" != "$branch" ]; then
+        git config --global init.defaultBranch "$branch"
+        echo "Default branch for new repos set to $branch."
+      fi
 
       # Keep tokens out of plaintext. Azure DevOps and GitHub over HTTPS both
       # want a PAT; libsecret puts it in the keyring the desktop already runs
@@ -506,6 +514,199 @@ Vagrant.configure('2') do |config|
       #{install_cmds}
 
       #{webapp_cmds}
+    SHELL
+  end
+
+  # Onyx: self-hosted search over your own sources (Asana, SharePoint, repos,
+  # Slack), with an LLM on top that answers citing the document it found.
+  #
+  # Off by default, and it should stay that way for most people: the full stack
+  # is eleven containers including OpenSearch and two model servers. Measured
+  # idle: 8 GB resident and ~25 GB of disk before indexing anything.
+  #
+  # Do NOT reach for docker-compose.onyx-lite.yml to make it fit in less. That
+  # overlay sets DISABLE_VECTOR_DB=true and moves the model servers, OpenSearch,
+  # Redis and the background worker behind profiles, which disables connectors
+  # and search entirely. Lite gives you a chat window, not a search engine.
+  #
+  # No LLM API key is needed to boot. The provider, and every connector
+  # credential, is entered in the web UI afterwards -- nothing authenticated
+  # belongs in this file or in config.json.
+  onyx = config_data['onyx'] || {}
+  if onyx['enabled']
+    onyx_ref = (onyx['ref'] || '').to_s
+    config.vm.provision 'onyx', type: 'shell', privileged: false,
+                                inline: <<~SHELL
+      set -eu
+
+      command -v docker >/dev/null 2>&1 || {
+        echo 'docker is not installed; add "docker" and "docker-compose" to packages first.' >&2
+        exit 1
+      }
+
+      # Omarchy ships docker stopped and the user outside the docker group.
+      # Both are needed and both are idempotent.
+      sudo systemctl enable --now docker >/dev/null
+      # No 'tr' with a backslash-n here: inside a Ruby <<~ heredoc that is a
+      # real newline, which lands at column 0 and destroys the heredoc's
+      # indentation stripping for everything below it.
+      id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"
+
+      # Preflight, before the pull spends half an hour earning a disk-full error.
+      # Measured idle on a 12 GB VM: 8 GB resident, ~25 GB on disk, nothing
+      # indexed yet. Both only grow once you connect a source.
+      mem_gb=$(awk '/MemTotal/ {printf "%d", $2/1024/1024}' /proc/meminfo)
+      if [ "$mem_gb" -lt 11 ]; then
+        echo "WARNING: Onyx wants ~12 GB; this VM has ${mem_gb} GB." >&2
+        echo "         Raise memory_mb in config.json and reload; unlike the disk," >&2
+        echo "         memory can be changed without rebuilding anything." >&2
+      fi
+
+      # Only meaningful before the first pull: once the images are down, that
+      # ~25 GB is already spent and the free figure is expected to be low. A
+      # check that fails on a working install is a check that gets deleted.
+      if docker image ls --format '{{.Repository}}' 2>/dev/null | grep -q onyx; then
+        already_pulled=yes
+      else
+        already_pulled=no
+      fi
+
+      free_gb=$(df -BG --output=avail / | tail -1 | tr -dc '0-9')
+      if [ "$already_pulled" = yes ]; then
+        echo "Onyx images already present; skipping the disk preflight."
+      elif [ "$free_gb" -lt 25 ]; then
+        echo "ERROR: Onyx needs ~25 GB before indexing a single document;" >&2
+        echo "       / has only ${free_gb} GB free. This cannot succeed." >&2
+        echo "" >&2
+        echo "       disk_gb is baked into the base box, so it is not a config" >&2
+        echo "       change: raise it, delete the box with" >&2
+        echo "         vagrant box remove omarchy-empty-<old>g" >&2
+        echo "       and rebuild. See docs/onyx.md." >&2
+        exit 1
+      elif [ "$free_gb" -lt 40 ]; then
+        echo "WARNING: ${free_gb} GB free. Onyx takes ~25 GB before indexing" >&2
+        echo "         anything, and indexing grows it. Consider disk_gb 128." >&2
+      fi
+
+      dir="$HOME/Lab/onyx"
+      if [ -d "$dir/.git" ]; then
+        git -C "$dir" fetch -q --depth 1 origin
+        git -C "$dir" reset -q --hard FETCH_HEAD
+      else
+        mkdir -p "$HOME/Lab"
+        git clone -q --depth 1 #{onyx_ref == '' ? '' : "--branch #{Shellwords.escape(onyx_ref)} "}https://github.com/onyx-dot-app/onyx.git "$dir"
+      fi
+      echo "Onyx at $(git -C "$dir" log -1 --format='%h %s' | cut -c1-72)"
+
+      cd "$dir/deployment/docker_compose"
+
+      # env.template ships POSTGRES_PASSWORD=password and minioadmin/minioadmin.
+      # Generate real ones once, then never touch the file again -- rewriting it
+      # on a later provision would orphan the existing Postgres volume.
+      if [ ! -f .env ]; then
+        cp env.template .env
+        gen() { tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32; }
+        minio_pw=$(gen)
+        sed -i "s|^USER_AUTH_SECRET=.*|USER_AUTH_SECRET=\"$(gen)\"|" .env
+        sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(gen)|" .env
+        sed -i "s|^MINIO_ROOT_PASSWORD=.*|MINIO_ROOT_PASSWORD=$minio_pw|" .env
+        sed -i "s|^S3_AWS_SECRET_ACCESS_KEY=.*|S3_AWS_SECRET_ACCESS_KEY=$minio_pw|" .env
+        chmod 600 .env
+        echo 'Generated .env with random secrets (mode 600).'
+      else
+        echo '.env already exists; left untouched.'
+      fi
+
+      # A convenience wrapper, because the two -f flags are easy to get wrong
+      # and getting them wrong silently gives you the lite stack.
+      mkdir -p "$HOME/.local/bin"
+      cat > "$HOME/.local/bin/onyx-stack" <<'WRAP'
+      #!/usr/bin/env bash
+      # Manage the local Onyx stack: onyx-stack up|down|ps|logs
+      set -euo pipefail
+      cd "$HOME/Lab/onyx/deployment/docker_compose"
+      compose=(docker compose -f docker-compose.yml -f docker-compose.dev.yml)
+      case "${1:-ps}" in
+        up)   "${compose[@]}" up -d ;;
+        down) "${compose[@]}" down ;;
+        ps)   "${compose[@]}" ps ;;
+        logs) shift; "${compose[@]}" logs -f "$@" ;;
+        *)    echo "usage: onyx-stack up|down|ps|logs [service]" >&2; exit 2 ;;
+      esac
+      WRAP
+      chmod +x "$HOME/.local/bin/onyx-stack"
+
+      if [ "#{onyx['autostart'] ? 'yes' : 'no'}" = yes ]; then
+        if [ "$already_pulled" = yes ]; then
+          echo 'Starting the stack...'
+        else
+          echo 'Starting the stack. The first run pulls ~25 GB; expect this to'
+          echo 'take tens of minutes before the UI answers.'
+        fi
+        sudo docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+        echo "Onyx will be at http://localhost:#{(onyx['port'] || 3000).to_i} once the containers settle."
+      else
+        echo 'Not started. Run `onyx-stack up` inside the VM when you want it.'
+      fi
+    SHELL
+  end
+
+  # VirtualBox Guest Additions: shared clipboard between host and VM, and
+  # dynamic resolution. Off unless asked for, but cheap and widely wanted -- the
+  # whole repo targets VirtualBox, and pasting into the VM is otherwise painful.
+  #
+  # The kernel modules (vboxguest, vboxsf, vboxvideo) ship in-tree with the
+  # Omarchy kernel, so there is no DKMS build. The one subtlety is a udev race:
+  # 60-vboxguest.rules sets /dev/vboxuser to 0666 only on the module's "add"
+  # event, which has already passed when the provisioner modprobes by hand -- so
+  # VBoxClient would fail with VbglR3InitUser VERR_ACCESS_DENIED. Re-firing the
+  # add event fixes it. On a normal boot the module loads via modules-load.d and
+  # the rule applies on its own, so this only matters for the live install.
+  ga = config_data.key?('guest_additions') ? config_data['guest_additions'] : true
+  if ga
+    config.vm.provision 'guest-additions', type: 'shell', privileged: false,
+                                           inline: <<~'SHELL'
+      set -eu
+
+      echo 'Installing virtualbox-guest-utils...'
+      sudo pacman -S --needed --noconfirm virtualbox-guest-utils >/dev/null
+
+      echo 'Loading guest modules...'
+      sudo modprobe vboxguest vboxsf vboxvideo
+      printf 'vboxguest\nvboxsf\nvboxvideo\n' \
+        | sudo tee /etc/modules-load.d/virtualbox-guest.conf >/dev/null
+
+      # Fix the /dev/vboxuser permission race described above.
+      sudo udevadm control --reload-rules
+      sudo udevadm trigger --action=add --subsystem-match=misc
+
+      sudo systemctl enable --now vboxservice >/dev/null
+
+      # Start the clipboard client per graphical session. The Wayland session
+      # type is required under Hyprland; the X11 default does nothing here.
+      autostart="$HOME/.config/hypr/autostart.lua"
+      line='o.launch_on_start("VBoxClient --clipboard --session-type wayland")'
+      mkdir -p "$(dirname "$autostart")"
+      touch "$autostart"
+      if ! grep -qF "$line" "$autostart"; then
+        {
+          echo ''
+          echo '-- VirtualBox shared clipboard (added by the guest-additions provisioner).'
+          echo "$line"
+        } >> "$autostart"
+        echo 'Added VBoxClient to Hyprland autostart.'
+      else
+        echo 'Hyprland autostart already starts VBoxClient.'
+      fi
+
+      # Best effort for the running session; a fresh login picks it up anyway.
+      if [ -S "/run/user/$(id -u)/wayland-1" ] && ! pgrep -f 'VBoxClient --clipboard' >/dev/null; then
+        XDG_RUNTIME_DIR="/run/user/$(id -u)" WAYLAND_DISPLAY=wayland-1 \
+          setsid VBoxClient --clipboard --session-type wayland >/dev/null 2>&1 || true
+        echo 'Clipboard client started for the current session.'
+      fi
+
+      echo 'Guest Additions ready. Copy on the host, paste with Ctrl+Shift+V in the VM.'
     SHELL
   end
 

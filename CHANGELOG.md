@@ -7,6 +7,28 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
+## [1.2.0] - 2026-09-23
+
+Verified against **Omarchy 4.0.4** on VirtualBox 7.2.6 and Vagrant 2.4.9,
+Windows 11 host. Both new provisioners were run against a live VM and checked
+for idempotency on a second pass.
+
+### Added
+
+- `guest_additions` (default **on**): VirtualBox Guest Additions for a shared
+  clipboard between host and VM, and dynamic resolution. Copy on the host, paste
+  with `Ctrl+Shift+V` in the VM. Handles the `/dev/vboxuser` udev permission
+  race that otherwise makes `VBoxClient` fail with `VERR_ACCESS_DENIED`, and
+  starts the clipboard client with the Wayland session type Hyprland needs. See
+  [docs/guest-additions.md](docs/guest-additions.md).
+- `onyx` (default off): self-hosted search over your own sources (Asana,
+  SharePoint, repos, Slack) with an LLM that answers citing the document it
+  found. Eleven containers, ~8 GB resident and ~25 GB of disk before indexing
+  anything, so it is opt-in and the provisioner refuses to start on too little
+  disk. No LLM key is needed to boot; connectors and credentials are configured
+  in the UI. See [docs/onyx.md](docs/onyx.md) and
+  `examples/knowledge-base.json`.
+
 ## [1.1.0] - 2026-09-22
 
 Verified against **Omarchy 4.0.4** on VirtualBox 7.2.6 and Vagrant 2.4.9,

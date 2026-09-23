@@ -33,6 +33,7 @@ Copy-Item examples\iac.json config.local.json
 | `web-dev.json` | Node and Python via `dev-env`, an editor and a browser, with ports forwarded |
 | `minimal.json` | Headless: no desktop window, SSH only, small |
 | `agent-vm.json` | Claude Code inside the VM plus the IaC toolchain — an agent sandbox that can't reach the host |
+| `knowledge-base.json` | Onyx: self-hosted search over your own sources. Heavy — read [Onyx](onyx.md) first |
 
 Because `config.local.json` is gitignored, whatever you build there lives on one
 machine and isn't backed up. If it's a setup you'd want again, add it to
@@ -58,6 +59,8 @@ machine and isn't backed up. If it's a setup you'd want again, add it to
 | `keyboard_variant` | empty | An xkb variant for `keyboard`, e.g. `intl` |
 | `az_extensions` | `[]` | Azure CLI extensions to add, e.g. `azure-devops`. See [Azure DevOps](azure-devops.md) |
 | `default_agent` | empty | Installs a coding agent and makes it Omarchy's default. See [agents](agents.md) |
+| `guest_additions` | `true` | VirtualBox shared clipboard with the host. See [Guest Additions](guest-additions.md) |
+| `onyx` | **disabled** | Self-hosted search over your own sources. Opt-in, and heavy: eleven containers, 8 GB resident and ~25 GB of disk before indexing anything — see [Onyx](onyx.md) |
 | `passwordless_sudo` | `true` | Installs the sudoers rule Vagrant assumes. See [security](security.md) |
 | `username`, `password` | `omarchy` | The user must satisfy Omarchy's rules: lowercase, starting with a letter or `_` |
 | `full_name`, `email_address` | empty | Used for the git identity inside the VM |

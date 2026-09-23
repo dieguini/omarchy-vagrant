@@ -1,0 +1,17 @@
+{
+  "//": "Self-hosted search over your own sources with Onyx. Heavy: eleven containers, 8 GB resident and ~25 GB of disk before indexing anything. See docs/onyx.md.",
+  "packages": [
+    "docker",
+    "docker-compose",
+    "jq"
+  ],
+  "memory_mb": 12288,
+  "cpus": 6,
+  "disk_gb": 128,
+  "onyx": {
+    "enabled": true,
+    "autostart": true,
+    "port": 3000,
+    "ref": ""
+  }
+}

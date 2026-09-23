@@ -67,6 +67,8 @@ Every key, and the four lists that declare what software the VM carries, are in
 | **[Security](docs/security.md)** | Where the password hash lives and what the sudo rule does |
 | **[Coding agents](docs/agents.md)** | Omarchy's default-agent mechanism, and running one inside the VM |
 | **[Azure DevOps](docs/azure-devops.md)** | The az extension, signing in, and cloning repos |
+| **[Guest Additions](docs/guest-additions.md)** | Shared clipboard with the host, on by default |
+| **[Onyx](docs/onyx.md)** | Self-hosted search over your own sources, and whether you want it |
 | **[Troubleshooting](docs/troubleshooting.md)** | Recovering from an interrupted `vagrant up` |
 
 Working on this repo? Start with **[AGENTS.md](AGENTS.md)**.
