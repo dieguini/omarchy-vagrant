@@ -79,10 +79,17 @@ The story of building this, including the three failures between a finished
 install and a usable desktop, is written up in
 [Running Omarchy in a Vagrant VM](https://medium.com/@diegojaureguisalvatierra/running-omarchy-in-a-vagrant-vm-and-the-three-failures-nobody-documented-8a83d4111abc).
 
+Giving the VM a self-hosted search brain with Onyx — and the four failures
+around it that nobody documents — is written up in
+[Giving an Omarchy VM a Search Brain with Onyx](https://medium.com/@diegojaureguisalvatierra/giving-an-omarchy-vm-a-search-brain-with-onyx-and-the-failures-nobody-documented-bbb669a5b6fc).
+
 ## What you don't get
 
-- **Synced folders.** Omarchy has no Guest Additions, so `/vagrant` is disabled
-  on purpose. Use `scp` over `vagrant ssh`, or a forwarded port.
+- **Synced folders.** `/vagrant` is disabled on purpose: the fstab entry
+  Vagrant adds for it broke the first boot, so the box turns it off. Guest
+  Additions *are* installed now (for the shared clipboard — see
+  [Guest Additions](docs/guest-additions.md)), so for moving text just copy and
+  paste; for files, use `scp` over `vagrant ssh` or a forwarded port.
 - **Graphics performance.** QtQuick runs in software. Browsing and video are
   sluggish; gaming is out. To just *try* Omarchy with better acceleration, the
   project ships [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows),
