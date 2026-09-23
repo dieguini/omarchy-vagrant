@@ -7,6 +7,18 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
+## [1.2.1] - 2026-09-23
+
+Docs only; no behaviour change.
+
+### Fixed
+
+- Requirements now separate the ~15 GB baseline from the **optional** Onyx
+  stack (off by default), which adds ~25 GB only when enabled — the old line
+  read as if 25 GB were always required.
+- `how-it-works.md` lists the `guest-additions` and `onyx` provisioners, so the
+  documented order matches the Vagrantfile.
+
 ## [1.2.0] - 2026-09-23
 
 Verified against **Omarchy 4.0.4** on VirtualBox 7.2.6 and Vagrant 2.4.9,
