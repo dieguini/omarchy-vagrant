@@ -88,6 +88,13 @@ They run in this order, and all of them are idempotent:
 3. `display` — resolution and scale.
 4. `tools` — packages, AUR, `omarchy install`, web apps. See
    [configuration](configuration.md).
+5. `guest-additions` — shared clipboard with the host, on by default. See
+   [Guest Additions](guest-additions.md).
+6. `onyx` — the self-hosted search stack, off by default. See [Onyx](onyx.md).
+
+Those are the load-bearing ones; several smaller provisioners (branding, idle,
+git identity, the default agent, mise, Azure) run between them, each covered in
+its own doc.
 
 You can add your own `config.vm.provision "shell"` blocks, with or without
 `privileged: true`: the first two leave the VM in a state where that works like

@@ -27,7 +27,7 @@ start, `vagrant destroy -f` to wipe it and begin again.
 
 - Windows with **VirtualBox 7** and **Vagrant**
 - **Git for Windows** (provides the `openssl` that hashes the password)
-- ~15 GB free: 6 GB of ISO plus whatever the VM's disk grows to
+- ~15 GB free: 6 GB of ISO plus whatever the VM's disk grows to. That's the baseline; the **optional** Onyx stack ([off by default](docs/onyx.md)) adds ~25 GB only if you turn it on
 - Virtualization enabled in the BIOS, and Hyper-V off if VirtualBox complains
 
 ## Configuring it
@@ -48,7 +48,7 @@ your password and identity stay out of git.
 ```
 
 `examples/` has ready-made profiles to start from — an IaC workstation, a web
-dev box, a headless one:
+dev box, a headless one, a search workstation:
 
 ```powershell
 Copy-Item examples\iac.json config.local.json
