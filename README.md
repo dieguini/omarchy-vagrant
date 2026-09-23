@@ -8,6 +8,8 @@ VM with one `vagrant up`, without touching the setup wizard.
 Built for Windows hosts: try the desktop, and keep it as a disposable Linux dev
 box, before wiping a disk for the real thing.
 
+![Omarchy 4 in a VirtualBox VM — fastfetch showing Omarchy 4.0.4, Hyprland on Wayland](images/cover.png)
+
 ```powershell
 git clone https://github.com/dieguini/omarchy-vagrant
 cd omarchy-vagrant

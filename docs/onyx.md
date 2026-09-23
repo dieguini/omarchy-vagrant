@@ -5,6 +5,8 @@ engine over your own sources — repos, wikis, ticket trackers, chat, document
 stores — with an LLM on top that answers questions citing the document it found.
 It self-hosts completely: nothing you index leaves the VM.
 
+![The Onyx chat UI running in the VM](../images/onyx-ui.png)
+
 The VM can run it. It is **off by default**, and for most uses it should stay
 off.
 
@@ -22,6 +24,8 @@ somebody's memory, that is the case Onyx is for.
 If you only want search over a folder of notes you wrote yourself, you do not
 need this. Grep and a text editor will beat it until the notes number in the
 hundreds.
+
+![The Onyx stack running — eleven containers, all healthy](../images/onyx-running.gif)
 
 ## What it costs
 
