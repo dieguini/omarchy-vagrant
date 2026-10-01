@@ -20,11 +20,20 @@ Omarchy. Which Omarchy version gets installed is chosen in `config.json`
   macOS's LibreSSL `openssl`, which cannot make the SHA-512 password hash
   (`brew install openssl@3`).
 - `.gitattributes`: shell scripts always check out with LF endings.
+- **[docs/host-setup.md](docs/host-setup.md)**: what to install on Windows,
+  macOS (Intel) and Linux, with the commands (winget, Homebrew, apt/dnf/pacman),
+  the per-host gotchas (Hyper-V, approving VirtualBox's kernel extension,
+  `vboxdrv` and KVM), and why Apple Silicon can't run it.
+- Troubleshooting: macOS / Linux equivalents for every command, and a table of
+  `bootstrap.sh` errors with their fix.
 
 ### Changed
 
 - The Vagrantfile finds VBoxManage inside `VirtualBox.app` and names the right
   bootstrap and eject script for the host it runs on.
+- Docs no longer assume Windows: the README quick start shows both bootstraps,
+  host-agnostic `vagrant` commands are no longer marked PowerShell, and the
+  clipboard note covers macOS's `Cmd` / Host key.
 
 ### Verified
 

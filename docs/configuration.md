@@ -24,7 +24,11 @@ is gitignored, so your password and identity stay out of git.
 `examples/` has ready-made profiles. Copy one and edit from there:
 
 ```powershell
-Copy-Item examples\iac.json config.local.json
+Copy-Item examples\iac.json config.local.json   # Windows
+```
+
+```bash
+cp examples/iac.json config.local.json          # macOS / Linux
 ```
 
 | Profile | What it sets up |
@@ -71,9 +75,16 @@ machine and isn't backed up. If it's a setup you'd want again, add it to
 After changing something that affects the install itself (user, disk, keyboard):
 
 ```powershell
+# Windows
 vagrant destroy -f
 .\bootstrap.ps1 -SkipIso -Force   # rebuild cidata and box without re-downloading 6 GB
-./bootstrap.sh --skip-iso --force  # the same on macOS / Linux
+vagrant up
+```
+
+```bash
+# macOS / Linux
+vagrant destroy -f
+./bootstrap.sh --skip-iso --force
 vagrant up
 ```
 
@@ -99,7 +110,7 @@ more than install: `editor vscode` turns off VS Code's auto-updater (Omarchy
 handles updates), points it at `gnome-libsecret` and applies the system theme.
 Browse the catalogue with:
 
-```powershell
+```sh
 vagrant ssh -c 'omarchy install --help'
 ```
 
@@ -120,7 +131,7 @@ installer. Execution order is as listed above.
 
 To apply them without restarting the VM:
 
-```powershell
+```sh
 vagrant provision --provision-with tools
 ```
 
@@ -131,7 +142,7 @@ deliberate — a `-Syu` inside a `vagrant up` can turn into a half-hour upgrade
 and even want a reboot. The trade-off is the classic partial-upgrade risk, so if
 the VM has been alive for a while, upgrade it first:
 
-```powershell
+```sh
 vagrant ssh -c 'omarchy update'
 ```
 

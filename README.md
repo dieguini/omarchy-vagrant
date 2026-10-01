@@ -11,14 +11,23 @@ a disposable Linux dev box, before wiping a disk for the real thing.
 ![Omarchy 4 in a VirtualBox VM — fastfetch showing Omarchy 4.0.4, Hyprland on Wayland](images/cover.png)
 
 ```powershell
+# Windows
 git clone https://github.com/dieguini/omarchy-vagrant
 cd omarchy-vagrant
 .\bootstrap.ps1
 vagrant up
 ```
 
-On macOS (Intel) and Linux it's the same with `./bootstrap.sh` in place of
-`.\bootstrap.ps1`.
+```bash
+# macOS (Intel) and Linux
+git clone https://github.com/dieguini/omarchy-vagrant
+cd omarchy-vagrant
+./bootstrap.sh
+vagrant up
+```
+
+First time? **[docs/host-setup.md](docs/host-setup.md)** lists what to install
+on each system, with the commands.
 
 The bootstrap downloads and verifies the ISO (~6 GB, resumable), builds the
 unattended-install drive and a dedicated SSH key, and registers the base box.
@@ -36,7 +45,9 @@ start, `vagrant destroy -f` to wipe it and begin again.
   - **Linux** — `python3`, `openssl` and `xorriso` (or `genisoimage`) from your package manager
 - **Not Apple Silicon** (M1–M4): Omarchy is x86_64-only and VirtualBox on Apple Silicon runs ARM guests only, so `bootstrap.sh` stops right away there
 - ~15 GB free: 6 GB of ISO plus whatever the VM's disk grows to. That's the baseline; the **optional** Onyx stack ([off by default](docs/onyx.md)) adds ~25 GB only if you turn it on
-- Virtualization enabled in the BIOS, and Hyper-V off if VirtualBox complains
+- Virtualization enabled in the BIOS/UEFI. Per-system details (Hyper-V on Windows,
+  the kernel extension approval on macOS, `vboxdrv` and KVM on Linux) are in
+  [host setup](docs/host-setup.md)
 
 ## Configuring it
 
@@ -70,6 +81,7 @@ Every key, and the four lists that declare what software the VM carries, are in
 
 | | |
 |---|---|
+| **[Host setup](docs/host-setup.md)** | What to install on Windows, macOS (Intel) or Linux before the first run — and why not Apple Silicon |
 | **[How it works](docs/how-it-works.md)** | The `cidata` unattended install, the empty box trick, and why it's built this way |
 | **[Configuration](docs/configuration.md)** | Every config key, and installing packages, AUR, and web apps |
 | **[Graphics](docs/graphics.md)** | Why the desktop comes up black without help, and setting resolution |
@@ -78,7 +90,7 @@ Every key, and the four lists that declare what software the VM carries, are in
 | **[Azure DevOps](docs/azure-devops.md)** | The az extension, signing in, and cloning repos |
 | **[Guest Additions](docs/guest-additions.md)** | Shared clipboard with the host, on by default |
 | **[Onyx](docs/onyx.md)** | Self-hosted search over your own sources, and whether you want it |
-| **[Troubleshooting](docs/troubleshooting.md)** | Recovering from an interrupted `vagrant up` |
+| **[Troubleshooting](docs/troubleshooting.md)** | Recovering from an interrupted `vagrant up`, on any host |
 
 Working on this repo? Start with **[AGENTS.md](AGENTS.md)**.
 
@@ -123,8 +135,8 @@ something changes:
   [unattended install](https://learn.omacom.io/2/the-omarchy-manual/51/unattended-installs)
   that makes any of this possible.
 - **[omacom/omarchy-iso](https://github.com/omacom/omarchy-iso)** — the
-  installer. The `user_configuration.json` template in `New-CidataIso.ps1` is
-  lifted from its own configurator.
+  installer. The `user_configuration.json` template in `New-CidataIso.ps1`
+  (and its bash twin `new-cidata-iso.sh`) is lifted from its own configurator.
 - **The ~445 `omarchy-*` scripts on the machine itself**, which are readable
   bash and settled most questions faster than any search.
 

@@ -44,13 +44,13 @@ answers *"can't work with non-legacy parsers"*.
 
 The emulated GPU offers modes all the way up to 4096x2160:
 
-```powershell
+```sh
 vagrant ssh -c 'hyprctl monitors all'
 ```
 
 Change `resolution` and apply it without restarting the VM:
 
-```powershell
+```sh
 vagrant provision --provision-with display
 ```
 

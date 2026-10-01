@@ -10,7 +10,7 @@
 }
 ```
 
-```powershell
+```sh
 vagrant provision --provision-with azure
 ```
 

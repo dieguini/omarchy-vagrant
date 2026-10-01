@@ -79,7 +79,7 @@ credentials. Avoid long-lived tokens in here — see the warning below.
 ## Why bother running an agent in here
 
 Not capability — blast radius. An agent in this VM has the repos, Terraform and
-Docker it needs, cannot reach the Windows host, and anything it breaks is undone
+Docker it needs, cannot reach the host, and anything it breaks is undone
 by `vagrant destroy`. The relaxed permission mode above is much easier to live
 with when the worst case is fifteen minutes of rebuild.
 

@@ -22,9 +22,13 @@ autostart line already in place and changes nothing.
 
 ## Using it
 
-Copy anything on the host, then paste in the VM with **`Ctrl+Shift+V`** (the
-terminal and most Wayland apps use Shift+V, not plain V). It works both ways —
-copying in the VM makes the text available on the host too.
+Copy anything on the host (`Ctrl+C` on Windows and Linux, `Cmd+C` on macOS),
+then paste in the VM with **`Ctrl+Shift+V`** (the terminal and most Wayland apps
+use Shift+V, not plain V). It works both ways — copying in the VM makes the text
+available on the host too.
+
+On a Mac, left `Cmd` is VirtualBox's *Host key* by default and isn't passed to
+the VM, so inside Omarchy it's `Ctrl+Shift+V` there as well.
 
 ## The one subtlety, if you ever install it by hand
 

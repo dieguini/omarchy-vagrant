@@ -1,6 +1,6 @@
 {
   "//": "Agent sandbox: Claude Code inside the VM, with the IaC toolchain to work on.",
-  "//2": "The point is blast radius -- an agent here cannot reach the Windows host, and vagrant destroy undoes anything.",
+  "//2": "The point is blast radius -- an agent here cannot reach the host, and vagrant destroy undoes anything.",
   "packages": [
     "terraform",
     "terragrunt",
