@@ -40,7 +40,7 @@ examples, so the shape is recognisable:
   two halves itself: `mise use -g <pkg>`, then write
   `~/.config/omarchy/defaults/agent`.
 - **`user_configuration.json`** is not documented as a format anywhere. The
-  template in `New-CidataIso.ps1` is lifted from the ISO's own configurator,
+  template in `New-CidataIso.ps1` (and its bash twin `new-cidata-iso.sh` — change both) is lifted from the ISO's own configurator,
   partition arithmetic included.
 
 ## What "read it" would have caught

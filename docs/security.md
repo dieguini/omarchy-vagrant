@@ -34,7 +34,8 @@ provisioner never runs — silently, and returning 0. Vagrant reports success.
 - the Vagrantfile ejects it from the VM as soon as the install finishes, and
   leaves a marker at `.build\installed-<vm>` so it isn't attached again. If that
   step fails it says so and does **not** write the marker, so the next boot
-  retries; `scripts\Eject-InstallMedia.ps1` does it by hand.
+  retries; `scripts\Eject-InstallMedia.ps1` (`scripts/eject-install-media.sh` on macOS /
+  Linux) does it by hand.
 
 The eject uses `--forceunmount`, and that isn't optional: Omarchy's desktop
 auto-mounts both media with `udiskie`, and while the guest has them mounted

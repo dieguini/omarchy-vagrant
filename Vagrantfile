@@ -9,8 +9,9 @@
 # carrying the configuration, which the installer finds and uses instead of the
 # setup wizard.
 #
-# That's why the base box here is empty. `bootstrap.ps1` builds it, downloads
-# the ISO and assembles the cidata; this Vagrantfile attaches both ISOs, boots,
+# That's why the base box here is empty. `bootstrap.ps1` (Windows) or
+# `bootstrap.sh` (macOS on Intel, Linux) builds it, downloads the ISO and
+# assembles the cidata; this Vagrantfile attaches both ISOs, boots,
 # and waits for the install to finish and the system to come back with sshd open.
 
 require 'json'
@@ -33,6 +34,12 @@ SSH_KEY   = File.join(BUILD, 'ssh', 'id_ed25519')
 # the cidata, which carries the password hash.
 INSTALLED = File.join(BUILD, "installed-#{VM_NAME}")
 
+# bootstrap.ps1 on Windows, bootstrap.sh on macOS (Intel) and Linux: same
+# artifacts in .build/, so everything below is host-agnostic.
+WINDOWS   = Gem.win_platform?
+BOOTSTRAP = WINDOWS ? '.\bootstrap.ps1' : './bootstrap.sh'
+EJECT     = WINDOWS ? 'scripts\Eject-InstallMedia.ps1' : 'scripts/eject-install-media.sh'
+
 def vboxmanage
   candidates = []
   %w[VBOX_MSI_INSTALL_PATH VBOX_INSTALL_PATH].each do |var|
@@ -40,6 +47,7 @@ def vboxmanage
     candidates << File.join(ENV[var].sub(%r{[\\/]$}, ''), 'VBoxManage.exe')
   end
   candidates << 'C:/Program Files/Oracle/VirtualBox/VBoxManage.exe'
+  candidates << '/Applications/VirtualBox.app/Contents/MacOS/VBoxManage'
   candidates.find { |c| File.exist?(c) } || 'VBoxManage'
 end
 
@@ -54,7 +62,7 @@ if %w[up reload resume provision].include?(ARGV[0])
     warn "The environment isn't prepared yet. Missing:"
     missing.each { |path, what| warn "  - #{what}: #{path}" }
     warn ''
-    warn 'Run this first:  .\bootstrap.ps1'
+    warn "Run this first:  #{BOOTSTRAP}"
     warn ''
     exit 1
   end
@@ -761,7 +769,7 @@ Vagrant.configure('2') do |config|
       else
         puts "WARNING: could not eject the media on port(s) #{failed.join(', ')}."
         puts 'The cidata carries your password hash and the desktop auto-mounts it.'
-        puts 'Run scripts\\Eject-InstallMedia.ps1 to remove them.'
+        puts "Run #{EJECT} to remove them."
       end
     end
   end

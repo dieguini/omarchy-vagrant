@@ -73,6 +73,7 @@ After changing something that affects the install itself (user, disk, keyboard):
 ```powershell
 vagrant destroy -f
 .\bootstrap.ps1 -SkipIso -Force   # rebuild cidata and box without re-downloading 6 GB
+./bootstrap.sh --skip-iso --force  # the same on macOS / Linux
 vagrant up
 ```
 

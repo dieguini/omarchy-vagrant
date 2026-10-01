@@ -5,8 +5,8 @@
 [Omarchy](https://omarchy.org/) — DHH's Arch + Hyprland distro — in a VirtualBox
 VM with one `vagrant up`, without touching the setup wizard.
 
-Built for Windows hosts: try the desktop, and keep it as a disposable Linux dev
-box, before wiping a disk for the real thing.
+Runs on Windows, macOS (Intel) and Linux hosts: try the desktop, and keep it as
+a disposable Linux dev box, before wiping a disk for the real thing.
 
 ![Omarchy 4 in a VirtualBox VM — fastfetch showing Omarchy 4.0.4, Hyprland on Wayland](images/cover.png)
 
@@ -17,7 +17,10 @@ cd omarchy-vagrant
 vagrant up
 ```
 
-`bootstrap.ps1` downloads and verifies the ISO (~6 GB, resumable), builds the
+On macOS (Intel) and Linux it's the same with `./bootstrap.sh` in place of
+`.\bootstrap.ps1`.
+
+The bootstrap downloads and verifies the ISO (~6 GB, resumable), builds the
 unattended-install drive and a dedicated SSH key, and registers the base box.
 `vagrant up` opens the VirtualBox window, the installer runs on its own, the VM
 reboots and Vagrant waits for SSH — 10-20 minutes depending on your connection.
@@ -27,8 +30,11 @@ start, `vagrant destroy -f` to wipe it and begin again.
 
 ## Requirements
 
-- Windows with **VirtualBox 7** and **Vagrant**
-- **Git for Windows** (provides the `openssl` that hashes the password)
+- An **x86_64** host with **VirtualBox 7** and **Vagrant**, plus:
+  - **Windows** — **Git for Windows** (provides the `openssl` that hashes the password)
+  - **macOS on Intel** — `brew install openssl@3` (macOS's own `openssl` is LibreSSL, which can't make the SHA-512 hash) and `python3` (`xcode-select --install`)
+  - **Linux** — `python3`, `openssl` and `xorriso` (or `genisoimage`) from your package manager
+- **Not Apple Silicon** (M1–M4): Omarchy is x86_64-only and VirtualBox on Apple Silicon runs ARM guests only, so `bootstrap.sh` stops right away there
 - ~15 GB free: 6 GB of ISO plus whatever the VM's disk grows to. That's the baseline; the **optional** Onyx stack ([off by default](docs/onyx.md)) adds ~25 GB only if you turn it on
 - Virtualization enabled in the BIOS, and Hyper-V off if VirtualBox complains
 
@@ -53,7 +59,8 @@ your password and identity stay out of git.
 dev box, a headless one, a search workstation:
 
 ```powershell
-Copy-Item examples\iac.json config.local.json
+Copy-Item examples\iac.json config.local.json   # Windows
+cp examples/iac.json config.local.json          # macOS / Linux
 ```
 
 Every key, and the four lists that declare what software the VM carries, are in

@@ -13,8 +13,9 @@ from the manual:
 > reboots into the finished system on its own.
 
 `cidata` is cloud-init's NoCloud label, so this is the same mechanism Proxmox
-and Packer already speak. It becomes three pieces that `bootstrap.ps1` builds
-before the first boot:
+and Packer already speak. It becomes three pieces that the bootstrap
+(`bootstrap.ps1` on Windows, `bootstrap.sh` on macOS / Linux) builds before the
+first boot:
 
 | Piece | What it is |
 |---|---|
@@ -52,6 +53,22 @@ It stops once the machine reboots into the installed system.
 from PowerShell. It produces ISO9660+Joliet, and Joliet is what preserves
 `user_configuration.json` as a long filename for the Linux kernel to read.
 
+## Building it on macOS and Linux
+
+`bootstrap.sh` builds the same image with what each host already has:
+`hdiutil makehybrid -iso -joliet` on macOS, `xorriso` (or `genisoimage` /
+`mkisofs`) with `-J -r` on Linux. The JSON is written by `python3` with the same
+structure and geometry as the PowerShell version — verified on Linux: given the
+same `config.local.json`, the two produce identical `user_configuration.json`.
+
+Two host traps it checks for up front:
+
+- **Apple Silicon.** Omarchy ships x86_64 only, and VirtualBox on Apple Silicon
+  runs ARM guests only, so there is no way to run this VM on an M-series Mac.
+  The script stops before downloading anything.
+- **macOS's `openssl` is LibreSSL**, whose `passwd` has no `-6`. The script looks
+  for Homebrew's `openssl@3` instead and says so if it isn't there.
+
 The `user_configuration.json` template comes from the ISO's own configurator
 ([omacom/omarchy-iso](https://github.com/omacom/omarchy-iso), in
 `configs/airootfs/root/configurator`) — archinstall's schema with an
@@ -65,16 +82,16 @@ look.**
 ## Layout
 
 ```
-bootstrap.ps1                    Orchestrates the three preparation steps
+bootstrap.ps1 / bootstrap.sh     Orchestrates the three preparation steps (Windows / macOS + Linux)
 config.json                      Defaults (tracked)
 config.local.json                Your overrides (gitignored)
 Vagrantfile                      Defines the VM, attaches the media, ejects at the end
-scripts/
-  lib.ps1                        Config, paths, ISO creation via IMAPI2
-  Get-OmarchyIso.ps1             Download + SHA-256 verification
-  New-CidataIso.ps1              Generates the installer files and the cidata ISO
-  New-EmptyBox.ps1               Builds and registers the empty Vagrant box
-  Eject-InstallMedia.ps1         Ejects the ISO and cidata by hand
+scripts/                         Each Windows script has a bash twin:
+  lib.ps1 / lib.sh               Config, paths, ISO creation (IMAPI2 / hdiutil, xorriso)
+  Get-OmarchyIso.ps1 / get-omarchy-iso.sh          Download + SHA-256 verification
+  New-CidataIso.ps1 / new-cidata-iso.sh            Generates the installer files and the cidata ISO
+  New-EmptyBox.ps1 / new-empty-box.sh              Builds and registers the empty Vagrant box
+  Eject-InstallMedia.ps1 / eject-install-media.sh  Ejects the ISO and cidata by hand
 ```
 
 ## Provisioners

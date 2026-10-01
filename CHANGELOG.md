@@ -7,6 +7,33 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
+## [1.3.0] - 2026-09-30
+
+### Added
+
+- **macOS (Intel) and Linux hosts**: `bootstrap.sh` and a bash twin of every
+  script in `scripts/` — same steps, same artifacts in `.build/`, so the one
+  Vagrantfile serves every host. The cidata ISO is built with `hdiutil` on
+  macOS and `xorriso` / `genisoimage` on Linux; the JSON with `python3`.
+- Host checks that fail early with a clear message: Apple Silicon (Omarchy is
+  x86_64-only and VirtualBox on Apple Silicon runs ARM guests only), and
+  macOS's LibreSSL `openssl`, which cannot make the SHA-512 password hash
+  (`brew install openssl@3`).
+- `.gitattributes`: shell scripts always check out with LF endings.
+
+### Changed
+
+- The Vagrantfile finds VBoxManage inside `VirtualBox.app` and names the right
+  bootstrap and eject script for the host it runs on.
+
+### Verified
+
+- On Linux (Ubuntu 20.04, x86_64): config loading, validation, SSH key,
+  SHA-512 hash and the cidata files — `user_configuration.json` is identical to
+  the one `bootstrap.ps1` writes for the same config.
+- **Not yet run on a Mac**, and the ISO build itself (`hdiutil` / `xorriso`)
+  and a full `vagrant up` from a macOS or Linux host are still to be verified.
+
 ## [1.2.1] - 2026-09-23
 
 Docs only; no behaviour change.
@@ -121,6 +148,7 @@ desktop, tools installed.
   [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) uses
   QEMU with virgl and performs better.
 
+[1.3.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.3.0
 [1.1.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.1.0
 [1.0.1]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.1
 [1.0.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.0
