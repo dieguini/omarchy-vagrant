@@ -7,6 +7,31 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
+## [1.4.0] - 2026-10-06
+
+### Fixed
+
+- **Shared clipboard under Hyprland.** The package's XDG autostart (`VBoxClient-all`)
+  started the clipboard client in X11 mode first, took the per-session lock, and the
+  Wayland client from the Hyprland autostart never ran, so nothing synced. The
+  guest-additions provisioner now hides that autostart for the user and starts
+  `VBoxClient --vmsvga-session` itself to keep dynamic resolution.
+
+### Added
+
+- **`scripts/Send-Clipboard.ps1`**: sends the Windows clipboard to the VM over SSH
+  (UTF-8, `wl-copy`, detached), for when host → VM sync stays silent on Wayland; `-Once`
+  clears it after one paste. See [docs/guest-additions.md](docs/guest-additions.md).
+
+- **`redact-shot`** ([docs/redact-shot.md](docs/redact-shot.md)): pixelates text in
+  a screenshot before it is saved or shared. Sensitive mode (default) covers emails,
+  IPs, GUIDs, hashes, tokens, URLs with query strings, phone numbers, the value after
+  `password:`/`token:` and your own terms in `~/.config/redact-shot/terms.txt`;
+  `--all` covers every word. Three OCR passes (sparse, layout, grayscale negative) so
+  buttons and light-on-dark text are found too. Installed by the new `redact-shot`
+  provisioner (tesseract, English data, ImageMagick); on by default, `"redact_shot":
+  false` to skip.
+
 ## [1.3.0] - 2026-09-30
 
 ### Added
@@ -157,6 +182,7 @@ desktop, tools installed.
   [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) uses
   QEMU with virgl and performs better.
 
+[1.4.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.4.0
 [1.3.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.3.0
 [1.1.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.1.0
 [1.0.1]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.0.1

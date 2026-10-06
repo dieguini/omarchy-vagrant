@@ -707,6 +707,20 @@ Vagrant.configure('2') do |config|
         echo 'Hyprland autostart already starts VBoxClient.'
       fi
 
+      # The package's XDG autostart (VBoxClient-all) also starts a clipboard client, in X11
+      # mode, which wins the per-session lock and then never syncs under Hyprland. Hide it
+      # for this user and keep the display-resize client it would otherwise start.
+      mkdir -p "$HOME/.config/autostart"
+      printf '[Desktop Entry]\nType=Application\nName=VirtualBox User Session\nHidden=true\n' \
+        > "$HOME/.config/autostart/vboxclient.desktop"
+      resize='o.launch_on_start("VBoxClient --vmsvga-session")'
+      if ! grep -qF "$resize" "$autostart"; then
+        {
+          echo '-- Display resize (VBoxClient-all is hidden: it starts the clipboard in X11 mode).'
+          echo "$resize"
+        } >> "$autostart"
+      fi
+
       # Best effort for the running session; a fresh login picks it up anyway.
       if [ -S "/run/user/$(id -u)/wayland-1" ] && ! pgrep -f 'VBoxClient --clipboard' >/dev/null; then
         XDG_RUNTIME_DIR="/run/user/$(id -u)" WAYLAND_DISPLAY=wayland-1 \
@@ -715,6 +729,30 @@ Vagrant.configure('2') do |config|
       fi
 
       echo 'Guest Additions ready. Copy on the host, paste with Ctrl+Shift+V in the VM.'
+    SHELL
+  end
+
+  # redact-shot: pixelate text in a screenshot before it is saved or shared --
+  # emails, IPs, tokens and your own terms, or every word with --all. Small:
+  # tesseract with English data plus ImageMagick, and one Python file with no
+  # dependencies beyond the standard library. See docs/redact-shot.md.
+  rs = config_data.key?('redact_shot') ? config_data['redact_shot'] : true
+  if rs
+    config.vm.provision 'redact-shot-file', type: 'file',
+                                            source: File.join(__dir__, 'tools', 'redact-shot.py'),
+                                            destination: '/tmp/redact-shot.py'
+    config.vm.provision 'redact-shot', type: 'shell', privileged: false,
+                                       inline: <<~'SHELL'
+      set -eu
+      echo 'Installing tesseract and ImageMagick...'
+      sudo pacman -S --needed --noconfirm tesseract tesseract-data-eng imagemagick >/dev/null
+      install -Dm755 /tmp/redact-shot.py "$HOME/.local/bin/redact-shot"
+      rm -f /tmp/redact-shot.py
+      mkdir -p "$HOME/.config/redact-shot"
+      [ -f "$HOME/.config/redact-shot/terms.txt" ] || \
+        printf '# One term per line (names, customers, hostnames). Matched case-insensitively.\n' \
+          > "$HOME/.config/redact-shot/terms.txt"
+      echo 'redact-shot ready: redact-shot screenshot.png [--all] [-o out.png]'
     SHELL
   end
 

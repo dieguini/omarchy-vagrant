@@ -107,7 +107,9 @@ They run in this order, and all of them are idempotent:
    [configuration](configuration.md).
 5. `guest-additions` — shared clipboard with the host, on by default. See
    [Guest Additions](guest-additions.md).
-6. `onyx` — the self-hosted search stack, off by default. See [Onyx](onyx.md).
+6. `redact-shot` — tesseract, ImageMagick and the `redact-shot` command, on by
+   default. See [redact-shot](redact-shot.md).
+7. `onyx` — the self-hosted search stack, off by default. See [Onyx](onyx.md).
 
 Those are the load-bearing ones; several smaller provisioners (branding, idle,
 git identity, the default agent, mise, Azure) run between them, each covered in

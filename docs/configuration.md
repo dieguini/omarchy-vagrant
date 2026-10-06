@@ -64,6 +64,7 @@ machine and isn't backed up. If it's a setup you'd want again, add it to
 | `az_extensions` | `[]` | Azure CLI extensions to add, e.g. `azure-devops`. See [Azure DevOps](azure-devops.md) |
 | `default_agent` | empty | Installs a coding agent and makes it Omarchy's default. See [agents](agents.md) |
 | `guest_additions` | `true` | VirtualBox shared clipboard with the host. See [Guest Additions](guest-additions.md) |
+| `redact_shot` | `true` | Installs `redact-shot`, which pixelates text in screenshots. See [redact-shot](redact-shot.md) |
 | `onyx` | **disabled** | Self-hosted search over your own sources. Opt-in, and heavy: eleven containers, 8 GB resident and ~25 GB of disk before indexing anything — see [Onyx](onyx.md) |
 | `passwordless_sudo` | `true` | Installs the sudoers rule Vagrant assumes. See [security](security.md) |
 | `username`, `password` | `omarchy` | The user must satisfy Omarchy's rules: lowercase, starting with a letter or `_` |

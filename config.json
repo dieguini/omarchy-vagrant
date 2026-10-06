@@ -37,6 +37,7 @@
   "forwarded_ports": [],
   "git_default_branch": "main",
   "guest_additions": true,
+  "redact_shot": true,
   "onyx": {
     "enabled": false,
     "autostart": true,

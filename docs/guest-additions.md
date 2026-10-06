@@ -15,7 +15,13 @@ the VM stayed isolated from the host clipboard.
 | Loads `vboxguest`, `vboxsf`, `vboxvideo` | In-tree with the Omarchy kernel, so no DKMS build |
 | Persists them in `/etc/modules-load.d/` | So they return on the next boot |
 | Enables `vboxservice` | The system-side guest service |
-| Adds `VBoxClient --clipboard` to Hyprland autostart | Clipboard sync lives in the graphical session |
+| Adds `VBoxClient --clipboard --session-type wayland` to Hyprland autostart | Clipboard sync lives in the graphical session |
+| Hides the package's `VBoxClient-all` autostart, adds `VBoxClient --vmsvga-session` | `VBoxClient-all` starts the clipboard in X11 mode, takes the per-session lock and never syncs under Hyprland |
+
+**Host → VM direction.** VM → host works. Host → VM can stay silent on a pure Wayland
+guest (the host never announces the new clipboard). When that happens, send it over
+SSH instead: copy on Windows, run `.\scripts\Send-Clipboard.ps1` (`-Once` for a
+password: the VM clipboard clears after one paste), and paste in the VM.
 
 It is idempotent: a second run detects the package, the modules and the
 autostart line already in place and changes nothing.
