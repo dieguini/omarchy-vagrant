@@ -7,6 +7,31 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
+## [1.5.0] - 2026-10-12
+
+Verified against Omarchy 4.0.4.
+
+### Added
+
+- **Helper tools for scripts and agents** ([docs/helper-tools.md](docs/helper-tools.md)),
+  on by default (`"helper_tools": true`):
+  - `chromium-cdp`: a Chromium with the DevTools protocol on `127.0.0.1:9222`, software
+    rendering for the emulated GPU, on a copy of your profile (Chromium refuses remote
+    debugging on the default one).
+  - `cdp`: drives it with no dependencies: `eval`, real mouse `click`/`field`/`hover`,
+    `type`, `options`, `upload`, `shot`. `REDACT=sensitive|all` runs `redact-shot` on the
+    screenshot, and deletes it if `redact-shot` is missing.
+  - `text-shot`: a command's output as a page-only screenshot (no desktop in the image).
+  - `mask`: reversible masking of IPs, emails, GUIDs, Azure resource IDs, query strings,
+    UNC hosts and your own terms before text leaves the VM; secrets after `password=`,
+    `token=` and similar are dropped, never stored. `mask selftest` runs at provision.
+  Node comes through mise when it is missing, as Omarchy installs it; nothing else is added.
+
+### Fixed
+
+- `tools/*` is checked out with LF on every host (`.gitattributes`), so a Windows clone
+  with `core.autocrlf` cannot break the shebang of the Python and Node tools.
+
 ## [1.4.0] - 2026-10-06
 
 ### Fixed
@@ -182,6 +207,7 @@ desktop, tools installed.
   [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) uses
   QEMU with virgl and performs better.
 
+[1.5.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.5.0
 [1.4.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.4.0
 [1.3.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.3.0
 [1.1.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.1.0

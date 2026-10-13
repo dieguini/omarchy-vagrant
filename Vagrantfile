@@ -756,6 +756,44 @@ Vagrant.configure('2') do |config|
     SHELL
   end
 
+  # Helper tools for scripts and agents: `chromium-cdp` (a Chromium with the DevTools
+  # protocol on localhost), `cdp` (drive it: eval, click, type, upload, screenshot),
+  # `text-shot` (a command's output as a page-only screenshot) and `mask` (reversible
+  # masking of IPs, emails, IDs and your own terms before text leaves the VM). No
+  # dependencies beyond Node (through mise, as Omarchy installs it) and the Python
+  # standard library. See docs/helper-tools.md.
+  ht = config_data.key?('helper_tools') ? config_data['helper_tools'] : true
+  if ht
+    config.vm.provision 'helper-tools-files', type: 'file',
+                                              source: File.join(__dir__, 'tools'),
+                                              destination: '/tmp/omarchy-tools'
+    config.vm.provision 'helper-tools', type: 'shell', privileged: false,
+                                        inline: <<~'SHELL'
+      set -eu
+      src=/tmp/omarchy-tools
+      export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+      if ! command -v node >/dev/null; then
+        echo 'Installing Node through mise...'
+        mise use -g node@lts >/dev/null
+      fi
+      install -Dm644 "$src/cdp.mjs" "$HOME/.local/lib/omarchy-tools/cdp.mjs"
+      printf '#!/bin/sh\nPATH="$HOME/.local/share/mise/shims:$PATH" exec node "$HOME/.local/lib/omarchy-tools/cdp.mjs" "$@"\n' \
+        > "$HOME/.local/bin/cdp"
+      chmod 755 "$HOME/.local/bin/cdp"
+      install -Dm755 "$src/chromium-cdp.sh" "$HOME/.local/bin/chromium-cdp"
+      install -Dm755 "$src/text-shot.sh" "$HOME/.local/bin/text-shot"
+      install -Dm755 "$src/mask.py" "$HOME/.local/bin/mask"
+      rm -rf "$src"
+      mkdir -p "$HOME/.config/mask"
+      [ -f "$HOME/.config/mask/terms.txt" ] || \
+        printf '# One term per line (servers, databases, customers, people). Matched case-insensitively.\n' \
+          > "$HOME/.config/mask/terms.txt"
+      chmod 700 "$HOME/.config/mask"
+      mask selftest
+      echo 'Helper tools ready: chromium-cdp, cdp, text-shot, mask (see docs/helper-tools.md)'
+    SHELL
+  end
+
   config.vm.provider 'virtualbox' do |vb|
     vb.name   = VM_NAME
     vb.gui    = config_data['gui']

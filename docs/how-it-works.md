@@ -109,7 +109,9 @@ They run in this order, and all of them are idempotent:
    [Guest Additions](guest-additions.md).
 6. `redact-shot` — tesseract, ImageMagick and the `redact-shot` command, on by
    default. See [redact-shot](redact-shot.md).
-7. `onyx` — the self-hosted search stack, off by default. See [Onyx](onyx.md).
+7. `helper-tools` — `chromium-cdp`, `cdp`, `text-shot` and `mask`, on by default. See
+   [helper tools](helper-tools.md).
+8. `onyx` — the self-hosted search stack, off by default. See [Onyx](onyx.md).
 
 Those are the load-bearing ones; several smaller provisioners (branding, idle,
 git identity, the default agent, mise, Azure) run between them, each covered in
