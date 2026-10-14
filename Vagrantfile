@@ -808,6 +808,12 @@ Vagrant.configure('2') do |config|
                   '--vram', config_data['vram_mb'].to_s,
                   '--accelerate3d', config_data['accelerate_3d'] ? 'on' : 'off',
                   '--clipboard-mode', 'bidirectional',
+                  # Absolute pointer: a PS/2 mouse is captured by the window and
+                  # under Wayland the cursor sticks or stops clicking once it
+                  # leaves. The USB tablet needs the OHCI controller (no
+                  # Extension Pack).
+                  '--usbohci', 'on',
+                  '--mouse', 'usbtablet',
                   # Disk first: the empty disk boots nothing and falls through
                   # to the DVD; once installed it boots from disk and ignores
                   # the ISO.

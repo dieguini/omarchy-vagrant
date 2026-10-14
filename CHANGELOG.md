@@ -7,6 +7,18 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
+## [1.5.1] - 2026-10-14
+
+Verified against Omarchy 4.0.4.
+
+### Fixed
+
+- **Mouse stops responding in the VM window.** The VM used VirtualBox's default PS/2 mouse, which
+  the window captures; under Wayland (Hyprland) the cursor stuck or stopped clicking after leaving
+  the window. The provider now sets an absolute pointer (`--mouse usbtablet`) with the USB OHCI
+  controller it needs (`--usbohci on`, no Extension Pack). An existing VM gets it on the next
+  `vagrant reload`, or with the same two `VBoxManage modifyvm` flags while it is powered off.
+
 ## [1.5.0] - 2026-10-12
 
 Verified against Omarchy 4.0.4.
