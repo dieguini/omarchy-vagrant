@@ -1,2 +1,9 @@
-*.sh text eol=lf
-tools/* text eol=lf
+# LF for every text file, on every host. The VM runs the tools, scripts and heredocs as they
+# are checked out, and a Windows clone with core.autocrlf=true would hand it CRLF: a broken
+# shebang, `bash\r` not found. PowerShell reads LF scripts fine, so .ps1 stays LF too.
+* text=auto eol=lf
+
+*.png binary
+*.gif binary
+*.jpg binary
+*.iso binary

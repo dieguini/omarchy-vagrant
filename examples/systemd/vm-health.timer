@@ -1,0 +1,10 @@
+# 10 minutes after boot (time for the desktop and chromium-cdp to come up), then every 2 hours.
+[Unit]
+Description=VM health check, 10 min after boot and every 2 h
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=2h
+
+[Install]
+WantedBy=timers.target

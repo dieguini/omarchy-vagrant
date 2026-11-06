@@ -39,6 +39,7 @@
   "guest_additions": true,
   "redact_shot": true,
   "helper_tools": true,
+  "vm_hyprland_tweaks": true,
   "onyx": {
     "enabled": false,
     "autostart": true,

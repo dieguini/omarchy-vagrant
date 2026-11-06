@@ -7,6 +7,55 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
+## [1.6.0] - 2026-11-06
+
+Verified against Omarchy 4.0.4.
+
+### Added
+
+- **Hyprland settings for a VM** (`vm-hyprland` provisioner, on by default,
+  `"vm_hyprland_tweaks": true`): a generated `~/.config/hypr/vm.lua`, loaded from the end of
+  `hyprland.lua` the same way it loads `monitors.lua`, turns off `focus_on_activate` (a script
+  raising a browser tab or opening a terminal no longer takes the keyboard from you) and sets
+  software cursors (the VMSVGA hardware cursor vanishes or flickers). It reads the values back
+  from the running session. See [troubleshooting](docs/troubleshooting.md).
+- **`vm-term`**: opens a `foot` window in the desktop session from SSH or a systemd unit and
+  prints its PID; `--close <pid>` closes exactly that window. It is how a script leaves a
+  `[y/N]` confirmation for a person to answer instead of the agent that prepared it. `foot`
+  is added by the helper-tools provisioner.
+- **`vm-health`**: read-only check of the `chromium-cdp` browser (exactly one, DevTools
+  answering), the web sessions you list (still signed in?), your services, every enabled user
+  timer and failed units; `--quiet` for a timer, with a desktop notification on a FAIL.
+  Example units in `examples/systemd/` (10 minutes after boot, then every 2 hours).
+- **`schedule-apply`**: the times of systemd user timers in one TOML
+  (`examples/schedule.toml`). Only `Description=` and `OnCalendar=` are rewritten, with the
+  IANA timezone appended so systemd follows daylight saving; `--check` exits 1 on a
+  difference; an optional `[workday]` writes `schedule.env` for scripts that guard their hours.
+- **`cdp`**: `new <url>` opens a background tab and prints its id (no focus change), `close`,
+  `activate`, `nav` (does not wait for the load: hash-only navigations never answer),
+  `wheel`, `key`, and `steps` to run a sequence in one session. `CDP_URL_MATCH` also matches a
+  target id, so a script addresses the tab it opened. `CDP_VIEWPORT=WxH` renders the desktop
+  layout in a small window; `CDP_CLIP=x,y,w,h` crops a screenshot.
+- **Conventions for agent scripts** in [docs/agents.md](docs/agents.md): `[y/N]` left for a
+  person, read back after a change, fail closed, no raw config files, close windows by PID.
+
+### Changed
+
+- **`cdp` times out.** Every call gives up after `CDP_TIMEOUT_MS` (default 30 s) and exits 5
+  naming the call, instead of a hung or hidden tab blocking a script forever. A screenshot of
+  a tab nobody can see never returns in Chromium; it now fails fast and suggests
+  `cdp activate`.
+- **`chromium-cdp` runs one launcher at a time** (a lock in `$XDG_RUNTIME_DIR`): two started
+  together at boot both saw no DevTools and started two Chromiums on the same profile. More
+  than one is now reported with their PIDs; nothing is killed.
+
+### Fixed
+
+- **CRLF from a Windows host.** The file provisioners copy `tools/` byte for byte, so a
+  checkout with `core.autocrlf=true` delivered scripts with a broken shebang. The
+  provisioners strip `\r` before installing, and `.gitattributes` now checks out every text
+  file with LF (`* text=auto eol=lf`); PowerShell reads LF scripts fine.
+
 ## [1.5.1] - 2026-10-14
 
 Verified against Omarchy 4.0.4.
@@ -219,6 +268,8 @@ desktop, tools installed.
   [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) uses
   QEMU with virgl and performs better.
 
+[1.6.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.6.0
+[1.5.1]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.5.1
 [1.5.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.5.0
 [1.4.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.4.0
 [1.3.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.3.0

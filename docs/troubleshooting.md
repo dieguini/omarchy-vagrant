@@ -66,6 +66,34 @@ That's its own story: see [graphics](graphics.md). Short version — it's almost
 certainly QtQuick, not Hyprland, and `vagrant ssh` still works while you
 investigate.
 
+## Focus jumps to a window that just opened
+
+A script raised a browser tab, or opened a terminal, and the keyboard went with it: what
+you were typing landed in the other window. Omarchy lets a window that asks to be activated
+take focus, which on a VM shared with scripts and agents means they steal it from you.
+
+The `vm-hyprland` provisioner (`"vm_hyprland_tweaks": true`, the default) turns that off in
+`~/.config/hypr/vm.lua` (`misc.focus_on_activate = false`); the window is still created and
+can be reached with the usual keys. Check what the session uses:
+
+```sh
+hyprctl getoption misc:focus_on_activate     # int: 0
+vagrant provision --provision-with vm-hyprland
+```
+
+## The mouse cursor disappears or flickers
+
+The pointer still clicks, but is invisible or flickers over some windows. Hyprland draws the
+cursor on a hardware plane, and VirtualBox's emulated VMSVGA adapter does not keep it. The
+same `vm.lua` sets software cursors (`cursor.no_hardware_cursors = 1`):
+
+```sh
+hyprctl getoption cursor:no_hardware_cursors # int: 1
+```
+
+If either value is not what `vm.lua` says, `hyprctl configerrors` shows whether the include
+line at the end of `~/.config/hypr/hyprland.lua` failed to load it.
+
 ## The install seems stuck
 
 While the install runs, `vagrant up` prints `Authentication failure` and

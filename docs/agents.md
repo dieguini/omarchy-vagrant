@@ -86,3 +86,25 @@ with when the worst case is fifteen minutes of rebuild.
 The flip side: this is a disposable VM with a weak password and passwordless
 sudo. Before giving an agent in here real credentials — cloud, compliance tools,
 anything — change the password and use short-lived, read-only ones.
+
+## Conventions for agent scripts
+
+Rules that kept scripts run by agents and timers in this VM from doing damage. Short on
+purpose:
+
+- **Confirmations are `[y/N]`, default No**, and the script is left ready in a
+  [`vm-term`](helper-tools.md#vm-term) window for a person to answer. The agent never types
+  the `y`.
+- **Read back after every change** and print the stored state, not what was sent: a call
+  that returns success has still been ignored before.
+- **Logs go to `~/Work/logs`** (or a directory you choose, the same one every time), so a
+  run can be reviewed after the terminal is gone.
+- **Fail closed.** Empty input, a missing file or a mismatch is a non-zero exit, never a
+  default that carries on.
+- **Never print raw config files that may hold secrets.** Filter on the server and return
+  only the fields needed; what reaches an agent's output can end up anywhere.
+- **One terminal per Terraform working directory.** The selected workspace is stored per
+  directory, so two terminals on one module share it, and a `workspace select` in one
+  changes what the other applies to.
+- **Close windows by PID** (`vm-term --close <pid>`), never with "close the active window",
+  which closes whatever has focus.

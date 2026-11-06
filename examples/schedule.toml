@@ -1,0 +1,24 @@
+# Times for systemd user timers, in one place. Copy to ~/.config/omarchy-schedule.toml and run
+# `schedule-apply` (or `schedule-apply --check` to see what would change). Only the
+# Description= and OnCalendar= lines of each .timer are rewritten; the files must exist.
+# See docs/helper-tools.md.
+
+# IANA name: appended to every OnCalendar, so systemd follows daylight saving itself.
+timezone = "America/Los_Angeles"
+
+# Optional. Writes schedule.env next to this file (WORK_TZ, WORK_START, WORK_END) for
+# scripts that check their own hours: `. ~/.config/schedule.env`.
+[workday]
+start = "06:00"
+end   = "17:00"
+
+# `file` is relative to this file's directory: from ~/.config that is ~/.config/systemd/user.
+[timers.backup]
+file        = "systemd/user/backup.timer"
+description = "Nightly backup of ~/Work"
+on          = ["*-*-* 02:30:00"]
+
+[timers.inbox-digest]
+file        = "systemd/user/inbox-digest.timer"
+description = "Digest on weekday mornings and middays"
+on          = ["Mon..Fri *-*-* 06:00:00", "Mon..Fri *-*-* 12:30:00"]

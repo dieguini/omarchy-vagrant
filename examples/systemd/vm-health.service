@@ -1,0 +1,14 @@
+# Runs vm-health quietly: prints only WARN/FAIL and raises a desktop notification on a FAIL.
+# Install: cp vm-health.service vm-health.timer ~/.config/systemd/user/
+#          systemctl --user daemon-reload && systemctl --user enable --now vm-health.timer
+[Unit]
+Description=VM health check (read-only)
+
+[Service]
+Type=oneshot
+# Node comes through mise for the web-session checks.
+Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/bin:/usr/bin
+ExecStart=%h/.local/bin/vm-health --quiet
+# 1 (WARN) and 2 (FAIL) are results, not a broken unit: otherwise the next run reports
+# vm-health.service itself among the failed units.
+SuccessExitStatus=1 2
