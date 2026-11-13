@@ -7,6 +7,16 @@ Since this automates third-party software, the version describes the repo, not
 Omarchy. Which Omarchy version gets installed is chosen in `config.json`
 (`omarchy_version`), and every release states which one it was verified against.
 
+## [1.6.1] - 2026-11-13
+
+Default ISO: Omarchy 4.0.6, the latest published ISO (4.5.0 is released but has no ISO yet).
+A VM built from 4.0.4 with this repo runs Omarchy 4.5.0 after `omarchy-update`.
+
+### Changed
+
+- `omarchy_version` defaults to `4.0.6` (`config.json`, `docs/configuration.md`).
+- README: run `omarchy-update` after the first boot, since Omarchy ships updates between ISOs.
+
 ## [1.6.0] - 2026-11-06
 
 Verified against Omarchy 4.0.4.
@@ -268,6 +278,7 @@ desktop, tools installed.
   [try-omarchy-windows](https://github.com/omacom/try-omarchy-windows) uses
   QEMU with virgl and performs better.
 
+[1.6.1]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.6.1
 [1.6.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.6.0
 [1.5.1]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.5.1
 [1.5.0]: https://github.com/dieguini/omarchy-vagrant/releases/tag/v1.5.0

@@ -47,7 +47,7 @@ machine and isn't backed up. If it's a setup you'd want again, add it to
 
 | Key | Default | Notes |
 |---|---|---|
-| `omarchy_version` | `4.0.4` | Determines the ISO URL |
+| `omarchy_version` | `4.0.6` | Determines the ISO URL |
 | `iso_url`, `iso_sha256` | empty | To pin your own ISO; derived from the version when empty |
 | `vm_name`, `hostname` | `omarchy` | |
 | `cpus`, `memory_mb`, `disk_gb` | 4 / 8192 / 64 | `disk_gb` is baked into the base box |

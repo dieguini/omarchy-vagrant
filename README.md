@@ -37,6 +37,9 @@ reboots and Vagrant waits for SSH — 10-20 minutes depending on your connection
 Then: `vagrant ssh` for a shell, `vagrant halt` / `vagrant up` to stop and
 start, `vagrant destroy -f` to wipe it and begin again.
 
+The ISO is a snapshot: Omarchy ships updates between ISOs, so run
+`omarchy-update` in the VM after the first boot to get to the latest release.
+
 ## Requirements
 
 - An **x86_64** host with **VirtualBox 7** and **Vagrant**, plus:
